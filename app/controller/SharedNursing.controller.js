@@ -47,15 +47,16 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/m
             /** Search on demand only (>= 2 chars); no full list is preloaded. */
             onSuggest: async function (oEvent) {
                 const term = (oEvent.getParameter("suggestValue") || "").trim(), vm = this._vm(), field = oEvent.getSource();
-                if (!vm.getProperty("/Plant") || term.length < 2) return;
+                if (term.length < 2) return;
                 try {
                     const r = await this.callFunction("searchNursingMaterials", { term, hospital: vm.getProperty("/Hospital"), modality: vm.getProperty("/Modality") });
-                    vm.setProperty("/Suggestions", r.value);
+                    const rows = Array.isArray(r) ? r : (r && r.value) || [];
+                    vm.setProperty("/Suggestions", rows);
                     field.suggest();                               // re-open the suggestion popup once the async result arrived
                 } catch (e) {
-                    // البحث بيتنفّذ مع كل حرف: لو فشل طلب مفيش داعي نطلّع MessageBox، بنفضّي الاقتراحات ونكمل
                     vm.setProperty("/Suggestions", []);
                     console.warn("searchNursingMaterials failed for term:", term, e);
+                    MessageToast.show(e && e.message ? e.message : this.getText("selectMaterialFirst"));
                 }
             },
             /** Fired by the "search" event: Enter, the search icon, a picked suggestion (param suggestionItem), or the Add button. */
@@ -84,7 +85,7 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/m
 
             onPost: async function () {
                 const vm = this._vm(); const d = vm.getData();
-                const items = d.Items.filter(i => Number(i.Quantity) > 0).map(i => ({ Material: i.Material, Quantity: Number(i.Quantity), BUOM: i.BUOM }));
+                const items = d.Items.filter(i => Number(i.Quantity) > 0).map(i => ({ Material: i.Material, Description: i.Description, Quantity: Number(i.Quantity), BUOM: i.BUOM }));
                 if (!items.length) return MessageToast.show(this.getText("enterQtyFirst"));
                 vm.setProperty("/busy", true);
                 try {

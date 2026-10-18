@@ -1,4 +1,6 @@
 'use strict';
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const cds = require('@sap/cds');
 const cc = require('./lib/case-consumption');
 const dc = require('./lib/daily-close');

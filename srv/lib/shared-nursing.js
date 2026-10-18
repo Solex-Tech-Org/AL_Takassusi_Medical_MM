@@ -4,6 +4,7 @@ const { SELECT, INSERT } = cds.ql;
 const V = require('../../common/validation/validators');
 const payload = require('../../common/integration/payload-builder');
 const { getS4Api } = require('../../common/integration/s4-material-api');
+const productApi = require('../../common/integration/s4-product-api');
 const E = () => cds.entities('aaml.mc');
 const cfg = () => cds.env.aaml || {};
 
@@ -14,17 +15,39 @@ async function derive(hospital, modality) {
   return issues.length ? { Message: V.msg(issues) } : { Plant: maps[0].Plant, StorageLocation: maps[0].StorageLocation, CostCenter: maps[0].CostCenter };
 }
 
-/** Search ACTIVE Nursing materials only; nothing is preloaded. */
+/** Attach Available stock when plant/storage are known. */
+async function withAvailable(rows, hospital, modality) {
+  const loc = await derive(hospital, modality);
+  const s4 = getS4Api();
+  return Promise.all(rows.map(async m => ({
+    ...m,
+    Available: loc.Plant
+      ? await s4.getMaterialStock({ material: m.Material, plant: loc.Plant, storageLocation: loc.StorageLocation })
+      : null
+  })));
+}
+
+/** Local fallback: ACTIVE Nursing materials from MaterialMaster. */
+async function searchLocal({ term, hospital, modality }) {
+  const like = `%${String(term).toLowerCase()}%`;
+  const rows = await SELECT.from(E().MaterialMaster).where({ MaterialType: 'Nursing', Active: true })
+    .and('(lower(Material) like', like, 'or lower(Description) like', like, ')').limit(25);
+  return withAvailable(rows.map(m => ({ Material: m.Material, Description: m.Description, BUOM: m.BaseUnit })), hospital, modality);
+}
+
+/**
+ * Search materials for Shared Nursing.
+ * When S4 Product API env is set, searches Product (MATNR / MAKTX / MEINS);
+ * otherwise falls back to local MaterialMaster.
+ */
 async function search({ term, hospital, modality }) {
   const t = String(term || '').trim();
   if (t.length < 2) return [];
-  const like = `%${t.toLowerCase()}%`;
-  const rows = await SELECT.from(E().MaterialMaster).where({ MaterialType: 'Nursing', Active: true })
-    .and('(lower(Material) like', like, 'or lower(Description) like', like, ')').limit(25);
-  const loc = await derive(hospital, modality);
-  const s4 = getS4Api();
-  return Promise.all(rows.map(async m => ({ Material: m.Material, Description: m.Description, BUOM: m.BaseUnit,
-    Available: loc.Plant ? await s4.getMaterialStock({ material: m.Material, plant: loc.Plant, storageLocation: loc.StorageLocation }) : null })));
+  if (productApi.isConfigured()) {
+    const rows = await productApi.searchProducts(t);
+    return withAvailable(rows, hospital, modality);
+  }
+  return searchLocal({ term: t, hospital, modality });
 }
 
 async function validate(input) {
@@ -34,7 +57,11 @@ async function validate(input) {
   const mvIssues = V.movementType(mv, cfg().prohibitedMovementTypes);
   if (!input.PostingDate) ok = false;
   for (const it of input.Items || []) {
-    const master = await SELECT.one.from(E().MaterialMaster).where({ Material: it.Material });
+    let master = await SELECT.one.from(E().MaterialMaster).where({ Material: it.Material });
+    // Products selected from S/4 API may not exist in local MaterialMaster yet
+    if (!master && productApi.isConfigured() && it.Material) {
+      master = { Material: it.Material, Description: null, BaseUnit: it.BUOM, MaterialType: 'Nursing', Active: true };
+    }
     const issues = V.sharedItem(it, master);
     if (issues.length) ok = false;
     items.push({ Material: it.Material, Status: issues.length ? 'Error' : 'Ready', Message: V.msg(issues) });
@@ -63,7 +90,7 @@ async function post(input) {
   try { res = await getS4Api().postMaterialDocument(body); }
   catch (e) { res = await getS4Api().findResultByIdempotencyKey(key).catch(() => null) || { success: false, Message: `Technical error: ${e.message}` }; }
   const rows = await Promise.all(items.map(async (it, i) => ({ Line: i + 1, Material: it.Material, Quantity: it.Quantity, BUOM: it.BUOM,
-    MaterialDescription: (await SELECT.one.from(MaterialMaster).where({ Material: it.Material }))?.Description,
+    MaterialDescription: (await SELECT.one.from(MaterialMaster).where({ Material: it.Material }))?.Description || it.Description || null,
     SAPMaterialDocumentItem: res.Items?.[i]?.MaterialDocumentItem, Message: res.success ? null : res.Message })));
   if (!dup) await INSERT.into(SharedConsumptions).entries({ ...head, Status: res.success ? 'Posted' : 'Error', ErrorMessage: res.success ? null : res.Message?.slice(0, 500),
     SAPMaterialDocument: res.MaterialDocument, SAPMaterialDocumentYear: res.MaterialDocumentYear, Items: rows });
