@@ -7,6 +7,10 @@ gen/
 default-*.json
 *.sqlite
 
+# Local secrets (copy from .env.example)
+.env
+.env.local
+
 # MTA
 mta_archives/
 *_mta_build_tmp

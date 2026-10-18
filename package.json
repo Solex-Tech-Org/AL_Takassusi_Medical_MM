@@ -4,7 +4,8 @@
   "dependencies": {
     "@cap-js/postgres": "^3",
     "@sap/cds": "^10",
-    "@sap/xssec": "^4"
+    "@sap/xssec": "^4",
+    "dotenv": "^16.6.1"
   },
   "devDependencies": {
     "@cap-js/sqlite": "^3",
@@ -21,6 +22,14 @@
       "auth": "dummy",
       "destinations": true,
       "html5-repo": true
+    },
+    "aaml": {
+      "productApi": {
+        "baseUrl": "",
+        "username": "",
+        "password": "",
+        "language": "EN"
+      }
     }
   }
 }

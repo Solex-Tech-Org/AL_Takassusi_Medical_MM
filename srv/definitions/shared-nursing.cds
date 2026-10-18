@@ -20,9 +20,10 @@ extend service MaterialConsumptionService {
     }
 
     type SharedItemInput {
-        Material : String;
-        Quantity : Decimal(15, 3);
-        BUOM     : String;
+        Material    : String;
+        Description : String;
+        Quantity    : Decimal(15, 3);
+        BUOM        : String;
     }
 
     type SharedInput {
