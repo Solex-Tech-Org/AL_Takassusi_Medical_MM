@@ -1,0 +1,98 @@
+<mvc:View
+  controllerName="aaml.material.controller.CaseSessions"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  displayBlock="true">
+  <Page showHeader="false" enableScrolling="true" class="app-page">
+    <content>
+      <VBox class="app-pad sapUiSizeCompact">
+        <Title text="{i18n>caseTitle}" level="H2" class="aamlPageTitle"/>
+        <Text text="{i18n>sessionsSubtitle}" class="aamlPageSubtitle"/>
+
+        <!-- ============ Create ============ -->
+        <VBox class="aamlSection aamlSectionFirst">
+          <HBox alignItems="End" class="aamlFilterBar aamlCreateBar">
+            <VBox class="aamlFilterField aamlFilterActions">
+              <Label text="&#160;"/>
+              <HBox class="aamlFilterButtons">
+                <Button text="{i18n>create}" icon="sap-icon://add" type="Emphasized"
+                        press=".onCreate" class="aamlBtn aamlBtnGo"/>
+              </HBox>
+            </VBox>
+          </HBox>
+        </VBox>
+
+        <!-- ============ Filters (بحث في المعاملات السابقة بالـ ID أو بتاريخ) ============ -->
+        <VBox class="aamlSection">
+          <Toolbar class="aamlTableToolbar">
+            <core:Icon src="sap-icon://filter" class="aamlToolbarIcon"/>
+            <Title text="{i18n>filters}" level="H3"/>
+          </Toolbar>
+          <HBox wrap="Wrap" alignItems="End" class="aamlFilterBar aamlFilter2">
+            <VBox class="aamlFilterField">
+              <Label text="{i18n>colSessionId}" labelFor="fSessionNo"/>
+              <Input id="fSessionNo" width="100%" placeholder="CS-0001" submit=".onSearch" liveChange=".onFilterInput"/>
+            </VBox>
+            <VBox class="aamlFilterField">
+              <Label text="{i18n>filterDate}" labelFor="fDate"/>
+              <DatePicker id="fDate" valueFormat="yyyy-MM-dd" displayFormat="medium" width="100%"
+                          placeholder="{i18n>filterDate}" change=".onFilterInput"/>
+            </VBox>
+            <VBox class="aamlFilterField aamlFilterActions">
+              <Label text="&#160;"/>
+              <HBox class="aamlFilterButtons">
+                <Button text="{i18n>go}" icon="sap-icon://search" type="Emphasized" press=".onSearch" class="aamlBtn aamlBtnGo"/>
+                <Button text="{i18n>clear}" icon="sap-icon://clear-filter" type="Default"
+                        enabled="{view>/canClear}" press=".onClearFilters" class="aamlBtn aamlBtnClear"/>
+              </HBox>
+            </VBox>
+          </HBox>
+        </VBox>
+
+        <!-- ============ المعاملات السابقة ============ -->
+        <VBox class="aamlSection aamlSectionFit">
+          <Table id="sessionsTable" class="aamlTable aamlTableFit" fixedLayout="true" showSeparators="Inner"
+                 growing="true" growingThreshold="50" noDataText="{i18n>noSessions}"
+                 updateFinished=".onTableUpdated"
+                 items="{ path: '/CaseSessions',
+                            parameters: { $select: 'ID,SessionNo,DateFrom,DateTo,createdAt,TotalCases,PostedCases,RemainingCases,SessionStatus' },
+                            sorter: [{ path: 'createdAt', descending: true }] }">
+            <headerToolbar>
+              <Toolbar class="aamlTableToolbar">
+                <core:Icon src="sap-icon://history" class="aamlToolbarIcon"/>
+                <Title id="sessionsTitle" text="{i18n>sessionsTitle}" level="H3"/>
+                <ToolbarSpacer/>
+                <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>refresh}" press=".onRefresh"/>
+              </Toolbar>
+            </headerToolbar>
+            <columns>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colSessionId}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>dateFrom}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>dateTo}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colCreated}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colTotalCases}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colPostedCases}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colRemainingCases}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colStatus}"/></Column>
+            </columns>
+            <items>
+              <ColumnListItem type="Active" press=".onSessionPress">
+                <cells>
+                  <ObjectIdentifier title="{SessionNo}"/>
+                  <Text text="{DateFrom}"/>
+                  <Text text="{DateTo}"/>
+                  <Text text="{path: 'createdAt', formatter: '.formatter.dateTime'}"/>
+                  <Text text="{TotalCases}"/>
+                  <Text text="{PostedCases}"/>
+                  <Text text="{RemainingCases}"/>
+                  <ObjectStatus class="aamlStatus" text="{SessionStatus}" state="{path: 'SessionStatus', formatter: '.formatter.statusState'}"/>
+                </cells>
+              </ColumnListItem>
+            </items>
+          </Table>
+        </VBox>
+      </VBox>
+    </content>
+  </Page>
+</mvc:View>

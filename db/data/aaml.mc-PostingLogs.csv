@@ -1,0 +1,5 @@
+ID,Scenario,IdempotencyKey,Outcome,Message,SAPMaterialDocument,SAPMaterialDocumentYear
+40000000-0000-0000-0000-000000000001,Normal,IDEMP-2001,Success,Posted successfully,4900001012,2026
+40000000-0000-0000-0000-000000000002,NuclearConsumption,IDEMP-2002,Success,Posted successfully,4900001013,2026
+40000000-0000-0000-0000-000000000003,NuclearWaste,IDEMP-WASTE-0828,Success,Nuclear waste posted,4900001014,2026
+40000000-0000-0000-0000-000000000004,NuclearConsumption,IDEMP-ERR-01,BusinessError,Insufficient unrestricted stock,,

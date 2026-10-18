@@ -1,0 +1,256 @@
+<mvc:View
+  controllerName="aaml.material.controller.MaterialReport"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns:core="sap.ui.core"
+  xmlns="sap.m"
+  displayBlock="true">
+  <Page showHeader="false" enableScrolling="true" class="app-page">
+    <content>
+      <VBox class="app-pad sapUiSizeCompact">
+        <Title text="{i18n>reportTitle}" level="H2" class="aamlPageTitle sapUiSmallMarginBottom"/>
+
+        <IconTabBar class="aamlTabs" expandable="false" stretchContentHeight="false" applyContentPadding="false">
+          <items>
+
+            <!-- ============ History ============ -->
+            <IconTabFilter key="history" text="{i18n>tabHistory}">
+
+              <!-- Filter card -->
+              <VBox class="aamlSection">
+                <Toolbar class="aamlTableToolbar">
+                  <core:Icon src="sap-icon://filter" class="aamlToolbarIcon"/>
+                  <Title text="{i18n>filters}" level="H3"/>
+                </Toolbar>
+                <HBox wrap="Wrap" alignItems="End" class="aamlFilterBar">
+                  <VBox class="aamlFilterField">
+                    <Label text="{i18n>filterServiceDate}" labelFor="rDate"/>
+                    <Input id="rDate" placeholder="yyyy-MM-dd" width="100%" submit=".onFilter"/>
+                  </VBox>
+                  <VBox class="aamlFilterField">
+                    <Label text="{i18n>filterHospital}" labelFor="rHospital"/>
+                    <Input id="rHospital" width="100%" submit=".onFilter"/>
+                  </VBox>
+                  <VBox class="aamlFilterField">
+                    <Label text="{i18n>filterModality}" labelFor="rModality"/>
+                    <Input id="rModality" width="100%" submit=".onFilter"/>
+                  </VBox>
+                  <VBox class="aamlFilterField">
+                    <Label text="{i18n>filterCaseId}" labelFor="rCase"/>
+                    <Input id="rCase" width="100%" submit=".onFilter"/>
+                  </VBox>
+                  <VBox class="aamlFilterField">
+                    <Label text="{i18n>filterMaterial}" labelFor="rMaterial"/>
+                    <Input id="rMaterial" width="100%" submit=".onFilter"/>
+                  </VBox>
+                  <VBox class="aamlFilterField">
+                    <Label text="{i18n>filterStatus}" labelFor="rStatus"/>
+                    <Input id="rStatus" width="100%" submit=".onFilter"/>
+                  </VBox>
+                  <VBox class="aamlFilterField">
+                    <Label text="{i18n>filterSapDoc}" labelFor="rSap"/>
+                    <Input id="rSap" width="100%" submit=".onFilter"/>
+                  </VBox>
+                  <VBox class="aamlFilterField aamlFilterActions">
+                    <Label text="&#160;"/>
+                    <HBox class="aamlFilterButtons">
+                      <Button text="{i18n>go}" icon="sap-icon://search" type="Emphasized" press=".onFilter" class="aamlBtn aamlBtnGo"/>
+                      <Button text="{i18n>clear}" icon="sap-icon://clear-filter" type="Default" press=".onClearFilters" class="aamlBtn aamlBtnClear"/>
+                    </HBox>
+                  </VBox>
+                </HBox>
+              </VBox>
+
+              <!-- Table card -->
+              <VBox class="aamlSection">
+                <Table id="historyTable" class="aamlTable" fixedLayout="false" growing="true" showSeparators="Inner"
+                       noDataText="{i18n>noData}" updateFinished=".onTableUpdated"
+                       items="{ path: '/ConsumptionHistory', sorter: { path: 'ServiceDate', descending: true } }">
+                  <customData><core:CustomData key="titleKey" value="tabHistory"/></customData>
+                  <headerToolbar>
+                    <Toolbar class="aamlTableToolbar">
+                      <Title text="{i18n>tabHistory}" level="H3"/>
+                      <ToolbarSpacer/>
+                      <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>refresh}" press=".onRefresh"/>
+                    </Toolbar>
+                  </headerToolbar>
+                  <columns>
+                    <Column><Text text="{i18n>colCase}"/></Column>
+                    <Column><Text text="{i18n>colDate}"/></Column>
+                    <Column><Text text="{i18n>filterHospital}"/></Column>
+                    <Column><Text text="{i18n>filterModality}"/></Column>
+                    <Column><Text text="{i18n>colMaterial}"/></Column>
+                    <Column><Text text="{i18n>colClass}"/></Column>
+                    <Column><Text text="{i18n>colVials}"/></Column>
+                    <Column><Text text="{i18n>colBatch}"/></Column>
+                    <Column styleClass="aamlColCenter"><Text text="{i18n>colStatus}"/></Column>
+                    <Column><Text text="{i18n>colSap}"/></Column>
+                  </columns>
+                  <items>
+                    <ColumnListItem>
+                      <cells>
+                        <Text text="{CaseId}"/><Text text="{ServiceDate}"/><Text text="{Hospital}"/><Text text="{Modality}"/><Text text="{Material}"/>
+                        <Text text="{path: 'MaterialClass', formatter: '.formatter.classText'}"/>
+                        <Text text="{path: 'CalculatedVials', formatter: '.formatter.num3'}"/>
+                        <Text text="{Batch}"/>
+                        <ObjectStatus class="aamlStatus" text="{Status}" state="{path: 'Status', formatter: '.formatter.statusState'}"/>
+                        <Text text="{parts: ['SAPMaterialDocument', 'SAPMaterialDocumentYear', 'SAPMaterialDocumentItem'], formatter: '.formatter.sapDoc'}"/>
+                      </cells>
+                    </ColumnListItem>
+                  </items>
+                </Table>
+              </VBox>
+            </IconTabFilter>
+
+            <!-- ============ SAP Documents ============ -->
+            <IconTabFilter key="sap" text="{i18n>tabSap}">
+              <VBox class="aamlSection">
+                <Table class="aamlTable" fixedLayout="false" growing="true" showSeparators="Inner" noDataText="{i18n>noData}"
+                       updateFinished=".onTableUpdated"
+                       items="{ path: '/SAPDocumentResults', sorter: { path: 'createdAt', descending: true } }">
+                  <customData><core:CustomData key="titleKey" value="tabSap"/></customData>
+                  <headerToolbar>
+                    <Toolbar class="aamlTableToolbar">
+                      <Title text="{i18n>tabSap}" level="H3"/>
+                      <ToolbarSpacer/>
+                      <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>refresh}" press=".onRefresh"/>
+                    </Toolbar>
+                  </headerToolbar>
+                  <columns>
+                    <Column><Text text="Time"/></Column><Column><Text text="Scenario"/></Column><Column styleClass="aamlColCenter"><Text text="Outcome"/></Column>
+                    <Column><Text text="{i18n>colSap}"/></Column><Column><Text text="{i18n>colMessage}"/></Column>
+                  </columns>
+                  <items>
+                    <ColumnListItem><cells>
+                      <Text text="{createdAt}"/><Text text="{Scenario}"/>
+                      <ObjectStatus class="aamlStatus" text="{Outcome}" state="{path: 'Outcome', formatter: '.formatter.statusState'}"/>
+                      <Text text="{parts: ['SAPMaterialDocument', 'SAPMaterialDocumentYear'], formatter: '.formatter.sapDoc'}"/>
+                      <Text class="aamlWrap" text="{Message}"/>
+                    </cells></ColumnListItem>
+                  </items>
+                </Table>
+              </VBox>
+            </IconTabFilter>
+
+            <!-- ============ Waiting / Errors ============ -->
+            <IconTabFilter key="errors" text="{i18n>tabErrors}">
+              <VBox class="aamlSection">
+                <Table class="aamlTable" fixedLayout="false" growing="true" showSeparators="Inner" noDataText="{i18n>noData}"
+                       updateFinished=".onTableUpdated" items="{ path: '/ConsumptionErrors' }">
+                  <customData><core:CustomData key="titleKey" value="tabErrors"/></customData>
+                  <headerToolbar>
+                    <Toolbar class="aamlTableToolbar">
+                      <Title text="{i18n>tabErrors}" level="H3"/>
+                      <ToolbarSpacer/>
+                      <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>refresh}" press=".onRefresh"/>
+                    </Toolbar>
+                  </headerToolbar>
+                  <columns>
+                    <Column><Text text="{i18n>colCase}"/></Column><Column><Text text="Source record"/></Column><Column><Text text="{i18n>colDate}"/></Column>
+                    <Column><Text text="{i18n>colMaterial}"/></Column><Column styleClass="aamlColCenter"><Text text="{i18n>colStatus}"/></Column><Column><Text text="{i18n>colMessage}"/></Column>
+                  </columns>
+                  <items>
+                    <ColumnListItem><cells>
+                      <Text text="{CaseId}"/><Text text="{SourceRecordId}"/><Text text="{ServiceDate}"/><Text text="{Material}"/>
+                      <ObjectStatus class="aamlStatus" text="{Status}" state="Error"/><Text class="aamlWrap" text="{ErrorMessage}"/>
+                    </cells></ColumnListItem>
+                  </items>
+                </Table>
+              </VBox>
+            </IconTabFilter>
+
+            <!-- ============ NM Waste ============ -->
+            <IconTabFilter key="waste" text="{i18n>tabWaste}">
+              <VBox class="aamlSection">
+                <Table class="aamlTable" fixedLayout="false" growing="true" showSeparators="Inner" noDataText="{i18n>noData}"
+                       updateFinished=".onTableUpdated" items="{ path: '/WasteReport' }">
+                  <customData><core:CustomData key="titleKey" value="tabWaste"/></customData>
+                  <headerToolbar>
+                    <Toolbar class="aamlTableToolbar">
+                      <Title text="{i18n>tabWaste}" level="H3"/>
+                      <ToolbarSpacer/>
+                      <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>refresh}" press=".onRefresh"/>
+                    </Toolbar>
+                  </headerToolbar>
+                  <columns>
+                    <Column><Text text="{i18n>colCase}"/></Column><Column><Text text="{i18n>colMaterial}"/></Column><Column><Text text="{i18n>colBatch}"/></Column>
+                    <Column><Text text="Waste Vial"/></Column><Column><Text text="Waste mCi"/></Column><Column><Text text="Share"/></Column>
+                    <Column><Text text="Primary doc"/></Column><Column><Text text="{i18n>colSap}"/></Column><Column styleClass="aamlColCenter"><Text text="{i18n>colStatus}"/></Column>
+                  </columns>
+                  <items>
+                    <ColumnListItem><cells>
+                      <Text text="{CaseId}"/><Text text="{Material}"/><Text text="{Batch}"/>
+                      <Text text="{path: 'WasteVials', formatter: '.formatter.num3'}"/><Text text="{path: 'WasteMci', formatter: '.formatter.num3'}"/><Text text="{AllocationShare}"/>
+                      <Text text="{PrimaryDocumentReference}"/>
+                      <Text text="{parts: ['SAPMaterialDocument', 'SAPMaterialDocumentYear', 'SAPMaterialDocumentItem'], formatter: '.formatter.sapDoc'}"/>
+                      <ObjectStatus class="aamlStatus" text="{Status}" state="{path: 'Status', formatter: '.formatter.statusState'}"/>
+                    </cells></ColumnListItem>
+                  </items>
+                </Table>
+              </VBox>
+            </IconTabFilter>
+
+            <!-- ============ Reversals ============ -->
+            <IconTabFilter key="reversals" text="{i18n>tabReversals}">
+              <VBox class="aamlSection">
+                <Table class="aamlTable" fixedLayout="false" growing="true" showSeparators="Inner" noDataText="{i18n>noData}"
+                       updateFinished=".onTableUpdated"
+                       items="{ path: '/Reversals', sorter: { path: 'createdAt', descending: true } }">
+                  <customData><core:CustomData key="titleKey" value="tabReversals"/></customData>
+                  <headerToolbar>
+                    <Toolbar class="aamlTableToolbar">
+                      <Title text="{i18n>tabReversals}" level="H3"/>
+                      <ToolbarSpacer/>
+                      <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>refresh}" press=".onRefresh"/>
+                    </Toolbar>
+                  </headerToolbar>
+                  <columns>
+                    <Column><Text text="Scope"/></Column><Column><Text text="Original"/></Column><Column><Text text="Reversal"/></Column>
+                    <Column><Text text="Reason"/></Column><Column><Text text="User"/></Column><Column><Text text="{i18n>colDate}"/></Column>
+                  </columns>
+                  <items>
+                    <ColumnListItem><cells>
+                      <Text text="{Scope}"/>
+                      <Text text="{parts: ['OriginalDocument', 'OriginalDocumentYear'], formatter: '.formatter.sapDoc'}"/>
+                      <Text text="{parts: ['ReversalDocument', 'ReversalDocumentYear'], formatter: '.formatter.sapDoc'}"/>
+                      <Text class="aamlWrap" text="{Reason}"/><Text text="{createdBy}"/><Text text="{createdAt}"/>
+                    </cells></ColumnListItem>
+                  </items>
+                </Table>
+              </VBox>
+            </IconTabFilter>
+
+            <!-- ============ Shared Nursing ============ -->
+            <IconTabFilter key="shared" text="{i18n>tabShared}">
+              <VBox class="aamlSection">
+                <Table class="aamlTable" fixedLayout="false" growing="true" showSeparators="Inner" noDataText="{i18n>noData}"
+                       updateFinished=".onTableUpdated"
+                       items="{ path: '/SharedConsumptions', sorter: { path: 'PostingDate', descending: true } }">
+                  <customData><core:CustomData key="titleKey" value="tabShared"/></customData>
+                  <headerToolbar>
+                    <Toolbar class="aamlTableToolbar">
+                      <Title text="{i18n>tabShared}" level="H3"/>
+                      <ToolbarSpacer/>
+                      <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>refresh}" press=".onRefresh"/>
+                    </Toolbar>
+                  </headerToolbar>
+                  <columns>
+                    <Column><Text text="{i18n>postingDate}"/></Column><Column><Text text="{i18n>filterHospital}"/></Column><Column><Text text="{i18n>filterModality}"/></Column>
+                    <Column><Text text="Cost Center"/></Column><Column styleClass="aamlColCenter"><Text text="{i18n>colStatus}"/></Column><Column><Text text="{i18n>colSap}"/></Column>
+                  </columns>
+                  <items>
+                    <ColumnListItem><cells>
+                      <Text text="{PostingDate}"/><Text text="{Hospital}"/><Text text="{Modality}"/><Text text="{CostCenter}"/>
+                      <ObjectStatus class="aamlStatus" text="{Status}" state="{path: 'Status', formatter: '.formatter.statusState'}"/>
+                      <Text text="{parts: ['SAPMaterialDocument', 'SAPMaterialDocumentYear'], formatter: '.formatter.sapDoc'}"/>
+                    </cells></ColumnListItem>
+                  </items>
+                </Table>
+              </VBox>
+            </IconTabFilter>
+
+          </items>
+        </IconTabBar>
+      </VBox>
+    </content>
+  </Page>
+</mvc:View>

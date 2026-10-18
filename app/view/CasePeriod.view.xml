@@ -1,0 +1,46 @@
+<mvc:View
+  controllerName="aaml.material.controller.CasePeriod"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  displayBlock="true">
+  <Page showHeader="false" enableScrolling="true" class="app-page">
+    <content>
+      <VBox class="app-pad sapUiSizeCompact">
+        <Title text="{i18n>caseTitle}" level="H2" class="aamlPageTitle"/>
+        <Text text="{i18n>periodSubtitle}" class="aamlPageSubtitle"/>
+
+        <!-- ============ Consumption period: From / To + Get Consumption + Clear ============ -->
+        <VBox class="aamlSection aamlSectionFirst">
+          <Toolbar class="aamlTableToolbar">
+            <Button icon="sap-icon://nav-back" type="Transparent" tooltip="{i18n>backToTransactions}" press=".onBack"/>
+            <core:Icon src="sap-icon://calendar" class="aamlToolbarIcon"/>
+            <Title text="{i18n>consumptionPeriod}" level="H3"/>
+          </Toolbar>
+          <HBox wrap="Wrap" alignItems="End" class="aamlFilterBar aamlFilterRange">
+            <VBox class="aamlFilterField">
+              <Label text="{i18n>dateFrom}" labelFor="dpFrom" required="true"/>
+              <DatePicker id="dpFrom" valueFormat="yyyy-MM-dd" displayFormat="medium" width="100%"
+                          placeholder="{i18n>dateFrom}" change=".onDateChange"/>
+            </VBox>
+            <VBox class="aamlFilterField">
+              <Label text="{i18n>dateTo}" labelFor="dpTo" required="true"/>
+              <DatePicker id="dpTo" valueFormat="yyyy-MM-dd" displayFormat="medium" width="100%"
+                          placeholder="{i18n>dateTo}" change=".onDateChange"/>
+            </VBox>
+            <VBox class="aamlFilterField aamlFilterActions">
+              <Label text="&#160;"/>
+              <HBox class="aamlFilterButtons">
+                <Button text="{i18n>getConsumption}" enabled="{= !${view>/busy} }" icon="sap-icon://download" type="Emphasized"
+                        press=".onGetConsumption" class="aamlBtn aamlBtnGo"/>
+                <!-- Clear بيتفعّل بس لما يكون في تاريخ مكتوب -->
+                <Button text="{i18n>clear}" icon="sap-icon://clear-filter" type="Default"
+                        enabled="{view>/canClear}" press=".onClear" class="aamlBtn aamlBtnClear"/>
+              </HBox>
+            </VBox>
+          </HBox>
+        </VBox>
+      </VBox>
+    </content>
+  </Page>
+</mvc:View>

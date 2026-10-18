@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AAML Material Consumption</title>
+  <script
+    id="sap-ui-bootstrap"
+    src="https://ui5.sap.com/1.150.1/resources/sap-ui-core.js"
+    data-sap-ui-theme="sap_horizon"
+    data-sap-ui-resource-roots='{"aaml.material": "./"}'
+    data-sap-ui-libs="sap.m,sap.tnt,sap.ui.core,sap.ui.layout"
+    data-sap-ui-compat-version="edge"
+    data-sap-ui-async="true"
+    data-sap-ui-frame-options="trusted"
+    data-sap-ui-onInit="module:sap/ui/core/ComponentSupport"
+  ></script>
+  <link rel="stylesheet" href="css/style.css.map">
+  <link rel="icon" type="image/png" href="images/logo.png">
+  <style>
+    /* Use viewport units, not %-of-parent, at the document root. Inside an
+       embedded preview iframe (e.g. SAP Business Application Studio), a
+       height:100% chain can resolve against a parent that hasn't been given
+       a definite height yet at first paint, collapsing everything to 0px
+       until something (like opening DevTools) forces a relayout. vh reads
+       the iframe's own rendered viewport directly and isn't subject to that
+       race. */
+    html, body {
+      height: 100vh;
+      min-height: 100vh;
+      margin: 0;
+    }
+  </style>
+</head>
+<body class="sapUiBody" id="content">
+  <div
+    data-sap-ui-component
+    data-name="aaml.material"
+    data-id="aamlMaterialApp"
+    data-settings='{"id": "aamlMaterialApp"}'
+    data-handle-validation="true"
+    style="height: 100vh; min-height: 100vh;"
+  ></div>
+</body>
+</html>

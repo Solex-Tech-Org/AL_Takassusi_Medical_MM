@@ -1,0 +1,109 @@
+<mvc:View
+  controllerName="aaml.material.controller.SharedNursing"
+  xmlns:mvc="sap.ui.core.mvc"
+  xmlns="sap.m"
+  xmlns:core="sap.ui.core"
+  displayBlock="true">
+  <Page showHeader="false" enableScrolling="true" class="app-page" busy="{view>/busy}">
+    <content>
+      <VBox class="app-pad sapUiSizeCompact">
+        <Title text="{i18n>sharedTitle}" level="H2" class="aamlPageTitle"/>
+
+        <!-- ============ Posting details card ============ -->
+        <VBox class="aamlSection aamlSectionFirst">
+          <Toolbar class="aamlTableToolbar">
+            <core:Icon src="sap-icon://document-text" class="aamlToolbarIcon"/>
+            <Title text="{i18n>sharedDetails}" level="H3"/>
+          </Toolbar>
+          <HBox wrap="Wrap" alignItems="End" class="aamlFilterBar aamlFormBar">
+            <VBox class="aamlFilterField">
+              <Label text="{i18n>postingDate}" labelFor="sDate"/>
+              <DatePicker id="sDate" value="{view>/PostingDate}" valueFormat="yyyy-MM-dd" displayFormat="medium" width="100%"/>
+            </VBox>
+            <VBox class="aamlFilterField">
+              <Label text="{i18n>filterHospital}" labelFor="sHospital"/>
+              <Select id="sHospital" selectedKey="{view>/Hospital}" forceSelection="false" change=".onHospitalChange" width="100%" items="{view>/Hospitals}">
+                <core:Item key="{view>key}" text="{view>key}"/>
+              </Select>
+            </VBox>
+            <VBox class="aamlFilterField">
+              <Label text="{i18n>filterModality}" labelFor="sModality"/>
+              <Select id="sModality" selectedKey="{view>/Modality}" forceSelection="false" change=".onModalityChange" width="100%" items="{view>/Modalities}">
+                <core:Item key="{view>key}" text="{view>key}"/>
+              </Select>
+            </VBox>
+            <VBox class="aamlFilterField">
+              <Label text="{i18n>derivedCostCenter}" labelFor="sCostCenter"/>
+              <Input id="sCostCenter" value="{view>/CostCenter}" editable="false" width="100%" class="aamlReadonly"/>
+            </VBox>
+          </HBox>
+        </VBox>
+
+        <!-- ============ Materials card ============ -->
+        <VBox class="aamlSection">
+          <Toolbar class="aamlTableToolbar">
+            <core:Icon src="sap-icon://product" class="aamlToolbarIcon"/>
+            <Title text="{i18n>sharedItems}" level="H3"/>
+          </Toolbar>
+
+          <!-- Material search + Add -->
+          <HBox wrap="Wrap" alignItems="End" class="aamlFilterBar aamlSearchBar">
+            <VBox class="aamlFilterField">
+              <Label text="{i18n>colMaterial}" labelFor="matSearch"/>
+              <SearchField id="matSearch" width="100%" placeholder="{i18n>materialSearch}" enableSuggestions="true"
+                           suggest=".onSuggest" search=".onAddMaterial"
+                           suggestionItems="{view>/Suggestions}">
+                <suggestionItems>
+                  <SuggestionItem text="{view>Material}" description="{view>Description} ({view>BUOM})" key="{view>Material}"/>
+                </suggestionItems>
+              </SearchField>
+            </VBox>
+            <VBox class="aamlFilterField aamlFilterActions">
+              <Label text="&#160;"/>
+              <HBox class="aamlFilterButtons">
+                <Button text="{i18n>addMaterial}" icon="sap-icon://add" type="Emphasized" press=".onAddMaterial" class="aamlBtn aamlBtnGo aamlBtnWide"/>
+              </HBox>
+            </VBox>
+          </HBox>
+
+          <!-- Items table -->
+          <!-- fixedLayout="true" + من غير width على الأعمدة = كل الأعمدة بنفس العرض، وكلها متوسّطة -->
+          <Table class="aamlTable" items="{view>/Items}" fixedLayout="true" showSeparators="Inner" noDataText="{i18n>sharedEmpty}">
+            <columns>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colRemove}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colMaterial}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colDescription}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colBuom}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colAvailable}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colEnterQty}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colStatus}"/></Column>
+              <Column hAlign="Center" styleClass="aamlColCenter"><Text text="{i18n>colMessage}"/></Column>
+            </columns>
+            <items>
+              <ColumnListItem>
+                <cells>
+                  <Button icon="sap-icon://delete" type="Transparent" tooltip="{i18n>colRemove}" press=".onRemove" class="aamlDeleteBtn"/>
+                  <Text text="{view>Material}"/>
+                  <Text class="aamlWrapFit" text="{view>Description}"/>
+                  <Text text="{view>BUOM}"/>
+                  <Text text="{view>Available}"/>
+                  <Input value="{view>Quantity}" type="Number" textAlign="Center" width="100%" class="aamlQtyInput"/>
+                  <ObjectStatus class="aamlStatus" text="{view>StatusCode}" state="{path: 'view>StatusCode', formatter: '.formatter.statusState'}"
+                                visible="{= !!${view>StatusCode} }"/>
+                  <Text class="aamlWrapFit" text="{view>StatusMessage}"/>
+                </cells>
+              </ColumnListItem>
+            </items>
+          </Table>
+
+          <!-- Post action -->
+          <HBox justifyContent="End" class="aamlCardFooter aamlFilterActions">
+            <Button text="{i18n>postShared}" icon="sap-icon://accept" type="Accept" press=".onPost" class="aamlBtn aamlBtnPost aamlBtnWide"/>
+          </HBox>
+        </VBox>
+
+        <!-- <MessageStrip class="aamlHint sapUiSmallMarginTop" text="{i18n>sharedHint}" showIcon="true" enableFormattedText="false"/> -->
+      </VBox>
+    </content>
+  </Page>
+</mvc:View>

@@ -1,0 +1,79 @@
+@auth = Basic YWxpY2U6
+@host = http://localhost:4004/odata/v4/quality/MaterialConsumptionService
+@baseUrl = http://localhost:4004
+
+
+### 1) كل المعاملات السابقة
+GET {{host}}/CaseSessions?$orderby=createdAt desc&$count=true
+
+
+### 2) فتح معاملة جديدة لفترة (لو الفترة موجودة بيرجّع نفس المعاملة)
+POST {{host}}/openSession
+Content-Type: application/json
+
+{"dateFrom":"2026-10-07","dateTo":"2026-10-13"}
+
+
+### Get Data Posted CS-0001
+GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/ConsumptionHistory
+    ?$filter=Status eq 'Posted' and ServiceDate ge 2026-10-05 and ServiceDate le 2026-10-11
+    &$count=true
+    &$orderby=ServiceDate,CaseId
+Authorization: {{auth}}
+
+
+### Get Data Remaining CS-0001
+GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/CaseConsumption
+    ?$filter=ServiceDate ge 2026-10-05 and ServiceDate le 2026-10-11
+    &$count=true
+    &$orderby=ServiceDate,CaseId
+Authorization: {{auth}}
+
+
+### ConsumptionTechnical - list (all statuses)
+GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/ConsumptionTechnical?$count=true
+Authorization: {{auth}}
+
+
+### // Get All Cases Not Posted
+GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/CaseConsumption?$count=true&$orderby=CaseId
+
+### Get All Posted
+GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/ConsumptionHistory
+    ?$filter=Status eq 'Posted'
+    &$count=true
+    &$orderby=modifiedAt desc
+Authorization: {{auth}}
+
+
+
+### 1) Case rows Posted (Normal + Nuclear primary)
+GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/ConsumptionHistory
+    ?$filter=Status eq 'Posted'
+    &$count=true
+    &$orderby=modifiedAt desc
+Authorization: {{auth}}
+
+
+### 2) Nuclear waste
+GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/WasteReport
+    ?$filter=Status eq 'Posted'
+    &$count=true
+Authorization: {{auth}}
+
+
+### 3) Shared Nursing Posted (with items)
+GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/SharedConsumptions
+    ?$filter=Status eq 'Posted'
+    &$expand=Items
+    &$count=true
+    &$orderby=PostingDate desc
+Authorization: {{auth}}
+
+
+### Bonus: كل الأنواع مرة واحدة 
+GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/SAPDocumentResults
+    ?$filter=Outcome eq 'Success'
+    &$count=true
+    &$orderby=createdAt desc
+Authorization: {{auth}}

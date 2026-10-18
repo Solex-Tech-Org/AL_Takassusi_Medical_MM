@@ -1,0 +1,3 @@
+ID,Scope,OriginalDocument,OriginalDocumentYear,ReversalDocument,ReversalDocumentYear,Reason,ReplacementPosting
+70000000-0000-0000-0000-000000000001,Primary,4900001008,2026,4900001020,2026,Demo correction after service-date review,REPOST-2010
+70000000-0000-0000-0000-000000000002,Waste,4900001014,2026,4900001021,2026,Recalculate nuclear waste after correction,REPOST-WASTE-0828

@@ -1,0 +1,3244 @@
+@use "sass:list";
+
+// ============================================================
+// بديل الـ zoom: تصغير الـ rem نفسه
+// كل مقاسات الصفحة وكنترولز UI5 بالـ rem، فتصغير خط الجذر بيصغّرها كلها (النص، الـ padding،
+// ارتفاع الخانات والأزرار، الأيقونات) من غير ما المتصفح يعمل scale للصورة.
+// النتيجة: النص والخطوط الرفيعة (1px) بيفضلوا حادين وألوانهم من غير بهتان،
+// والـ popups (suggestions / dropdown / date picker) بتتحسب أماكنها صح من غير inverse zoom ولا transform.
+// ============================================================
+$app-scale: .80; // .8 = 80% (زوّده لو عايز الصفحة أكبر، قلله لو عايزها أصغر)
+
+html {
+    font-size: #{$app-scale * 100%} !important;
+}
+
+html,
+body {
+    height: 100%;
+}
+// ============================================================
+// AAML App Theme  (SCSS)
+// ============================================================
+
+// ---------- 1. Variables ----------
+$primary: #0b5cab;
+$primary-dark: #08417a;
+$primary-light: #2f80d6;
+$accent: #f59e0b; // لون مميز للـ active / hover
+$text-on-bar: #ffffff;
+$text-muted: #dbeafe;
+$bg-page: #f3f4f6;
+$bg-card: #ffffff;
+$border-color: #d1d5db;
+
+$footer-h: 2.25rem;
+$header-h: 3.5rem;
+$radius: 6px;
+
+$ease: cubic-bezier(.4, 0, .2, 1);
+$dur-fast: .15s;
+$dur: .25s;
+$dur-slow: .4s;
+
+// ---------- 2. Mixins ----------
+@mixin transition($props...) {
+    $items: (
+    );
+
+@each $p in $props {
+    $items: list.append($items, #{$p} $dur $ease, comma);
+}
+
+transition: $items;
+}
+
+@mixin lift($shadow: 0 6px 16px rgba(0, 0, 0, .12)) {
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: $shadow;
+    }
+}
+
+@mixin glass($alpha: .15) {
+    background: rgba(255, 255, 255, $alpha) !important;
+    border-color: transparent !important;
+}
+
+@mixin no-focus-ring {
+
+    &,
+    &:focus,
+    &:focus-visible,
+    &:active {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+}
+
+// ---------- 3. CSS custom properties (للتوافق مع UI5) ----------
+:root {
+    --aaml-bar-bg: #{$primary};
+    --aaml-bar-text: #{$text-on-bar};
+    --aaml-bar-muted: #{$text-muted};
+    --aaml-footer-h: #{$footer-h};
+}
+
+// ---------- 4. Keyframes ----------
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeSlideInRTL {
+    from {
+        opacity: 0;
+        transform: translateX(-16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulseGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba($accent, .5);
+    }
+
+    50% {
+        box-shadow: 0 0 0 6px rgba($accent, 0);
+    }
+}
+
+// ---------- 5. App shell ----------
+.app-shell {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: $bg-page;
+}
+
+.sapTntToolPage.aamlToolPage {
+    height: calc(100% - #{$footer-h}) !important;
+    height: calc(100% - var(--aaml-footer-h, #{$footer-h})) !important;
+}
+
+// ---------- 6. Header ----------
+.sapTntToolPage .sapTntToolHeader.aamlHeader {
+    background: linear-gradient(135deg, $primary-dark 0%, $primary 55%, $primary-light 100%) !important;
+    padding: 0 1rem;
+    height: $header-h;
+    gap: .75rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .3);
+}
+
+.aamlHeader {
+
+    // الأزرار
+    .sapMBtn {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        @include transition(transform);
+
+        .sapMBtnInner {
+            @include glass(.15);
+            border-radius: $radius;
+            @include transition(background, box-shadow);
+        }
+    }
+
+    .sapMBtn {
+        &:hover {
+            transform: translateY(-1px);
+
+            .sapMBtnInner {
+                background: rgba(255, 255, 255, .3) !important;
+                box-shadow: 0 3px 8px rgba(0, 0, 0, .2);
+            }
+        }
+
+        &:active {
+            transform: scale(.95);
+        }
+    }
+
+    .sapMBtnIcon {
+        color: var(--aaml-bar-text, #{$text-on-bar}) !important;
+        @include transition(transform);
+    }
+
+    .sapMBtn:hover .sapMBtnIcon {
+        transform: scale(1.15) rotate(-4deg);
+    }
+
+    // النصوص
+    .aamlHeaderTitle.sapMTitle {
+        color: var(--aaml-bar-text, #{$text-on-bar});
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: .01em;
+    }
+
+    .aamlHeaderSubtitle.sapMText {
+        color: var(--aaml-bar-muted, #{$text-muted});
+        font-size: .75rem;
+        line-height: 1.2;
+    }
+
+    .aamlHeaderCompany.sapMText {
+        color: var(--aaml-bar-text, #{$text-on-bar});
+        font-size: .9rem;
+        font-weight: 600;
+        letter-spacing: .02em;
+    }
+}
+
+.aamlHeaderBrand {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    line-height: 1.2;
+}
+
+// ---------- 7. Side navigation (حركة التنقل) ----------
+.sapTntSideNavigation {
+    @include transition(width, box-shadow);
+    overflow: hidden;
+
+    // العنصر العادي
+    .sapTntNLI {
+        position: relative;
+        overflow: hidden;
+        @include transition(background-color, color, padding);
+
+        // شريط جانبي بيظهر عند hover/active
+        &::before {
+            content: "";
+            position: absolute;
+            inset-block: 20%;
+            inset-inline-start: 0;
+            width: 3px;
+            border-radius: 0 3px 3px 0;
+            background: $accent;
+            transform: scaleY(0);
+            transform-origin: center;
+            @include transition(transform);
+        }
+
+        // الأيقونة
+        .sapTntNLIIcon,
+        .sapUiIcon {
+            @include transition(transform, color);
+        }
+
+        &:hover {
+            background-color: rgba($primary, .08) !important;
+
+            &::before {
+                transform: scaleY(1);
+            }
+
+            .sapTntNLIIcon,
+            .sapUiIcon {
+                transform: translateX(3px) scale(1.1);
+                color: $primary !important;
+            }
+        }
+
+        // العنصر المختار
+        &.sapTntNLISelected {
+            background: linear-gradient(90deg, rgba($primary, .16), rgba($primary, 0)) !important;
+            font-weight: 600;
+
+            &::before {
+                transform: scaleY(1);
+            }
+        }
+    }
+
+    // لما القايمة تكون مقفولة: إخفاء الاسم وتوسيط الأيقونة
+    &.sapTntSideNavigationNotExpanded {
+        .sapTntNLI {
+            padding-inline: 0 !important;
+            justify-content: center;
+
+            .sapTntNLIText,
+            .sapTntNLBText,
+            .sapMText,
+            .sapMLabel,
+            .sapTntNLIExpandIcon {
+                display: none !important;
+            }
+        }
+    }
+}
+
+// ---------- 8. Container (التنقل بين الصفحات) ----------
+.app-container.sapMNav {
+    flex: 1 1 0;
+    min-height: 0;
+    height: auto !important;
+}
+
+.app-page,
+.app-page>section {
+    background: $bg-page;
+}
+
+// حركة دخول الصفحة عند التنقل
+.app-page>section {
+    animation: fadeSlideIn $dur-slow $ease both;
+}
+
+[dir="rtl"] .app-page>section {
+    animation-name: fadeSlideInRTL;
+}
+
+.app-pad {
+    padding: 1rem 1.25rem;
+}
+
+// ---------- 9. Footer ----------
+.sapMTB.aamlFooter {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    background: linear-gradient(135deg, $primary-dark, $primary);
+    padding: 0 1rem;
+    height: var(--aaml-footer-h, #{$footer-h});
+    border: 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, .18);
+
+    .aamlFooterText.sapMText {
+        color: var(--aaml-bar-muted, #{$text-muted});
+        font-size: .75rem;
+        @include transition(color);
+
+        &:hover {
+            color: $text-on-bar;
+        }
+    }
+}
+
+// ---------- 10. Helpers ----------
+.aamlCard {
+    background: $bg-card;
+    border: 1px solid $border-color;
+    border-radius: $radius;
+    padding: .75rem 1rem;
+    margin-right: .75rem;
+    margin-bottom: .75rem;
+    min-width: 14rem;
+    @include transition(transform, box-shadow, border-color);
+    @include lift;
+
+    &:hover {
+        border-color: $primary-light;
+    }
+
+    .sapMTitle {
+        margin-bottom: .4rem;
+    }
+}
+
+.aamlCalcPanel.sapMPanel {
+    border-radius: $radius;
+    border: 1px solid $border-color;
+    @include transition(box-shadow, border-color);
+
+    &:hover {
+        border-color: $primary-light;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+    }
+}
+
+.aamlStickyActions {
+    margin-top: .75rem;
+}
+
+// ---------- 11. إزالة الإطار الأزرق (focus) ----------
+// زرار القائمة (toggle) في الهيدر
+.aamlHeader .sapMBtn {
+    @include no-focus-ring;
+
+    &::before,
+    &::after,
+    .sapMBtnInner::before,
+    .sapMBtnInner::after {
+        outline: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .sapMBtnInner,
+    .sapMBtnInner:focus,
+    .sapMBtnInner:active,
+    &.sapMBtnActive .sapMBtnInner {
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: transparent !important;
+    }
+}
+
+// الـ view (الصفحة) بعد التنقل
+.app-container,
+.app-page,
+.app-page>section,
+.sapMPage,
+.sapMPageEnableScrolling {
+    @include no-focus-ring;
+}
+
+// عناصر القايمة الجانبية
+.sapTntSideNavigation {
+
+    &,
+    &:focus {
+        outline: none !important;
+    }
+
+    .sapTntNLI,
+    .sapTntNLB,
+    .sapTntNL {
+
+        &,
+        &:focus,
+        &:focus-visible,
+        &:focus-within,
+        &:active {
+            outline: none !important;
+            box-shadow: none !important;
+            border-color: transparent !important;
+        }
+
+        &::after,
+        &:focus::after,
+        &:focus-within::after {
+            outline: none !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+    }
+
+}
+
+// ---------- 14. Material Report: card layout ----------
+// استبدل بالقسم ده القسم القديم كله (من "14. Material Report" لحد قبل "12. Responsive").
+// بيستخدم نفس المتغيرات والـ mixins اللي فوق.
+
+// ارتفاع موحد للخانات والأزرار
+$field-h: 2rem;
+$ctl-radius: 8px;
+
+// التابات: المسافة بين كل تابين = $tab-gap-half × 2، وحجم الـ pill من $tab-pad-y / $tab-pad-x
+$tab-gap-half: 1rem;
+$tab-pad-y: .45rem; // كان .35rem: زوّده لو عايز الـ pill نفسه أطول
+$tab-pad-x: 1rem;
+$tab-bar-h: 3.5rem; // ارتفاع شريط التابات كله: ده اللي بيدّي المسافة فوق وتحت الـ pill
+$tab-nudge-y: 0; // لو النص لسه واطي أو عالي شوية: جرّب -2px (يرفعه) أو 2px (ينزله)
+
+// كل قواعد الصفحة جوه .app-page: بتزود الـ specificity فوق قواعد UI5 (زي .sapUiSizeCompact .sapMTB)
+// عشان الشكل يفضل ثابت بعد الـ refresh مهما كان ترتيب تحميل ملفات UI5.
+.app-page {
+
+    // عنوان الصفحة
+    .aamlPageTitle.sapMTitle {
+        color: $primary-dark;
+        font-weight: 700;
+    }
+
+    // ---- Tabs: الشريط نفسه ككارت ----
+    .aamlTabs {
+
+        &.sapMITB,
+        .sapMITBContainerContent,
+        .sapMITBContent {
+            background: transparent !important;
+            border: 0 !important;
+        }
+
+        .sapMITH {
+            background: $bg-card;
+            border: 1px solid $border-color;
+            border-radius: $radius;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+            overflow: hidden;
+            // ارتفاع الشريط: بيدّي مسافة فاضية فوق وتحت الـ pill
+            height: $tab-bar-h !important;
+            min-height: $tab-bar-h !important;
+        }
+
+        // التابات تبدأ من أول الكارت (من غير مسافة فاضية قبل أول تاب)
+        .sapMITBHead,
+        .sapMITBHeadWrapper,
+        .sapMITBScrollContainer,
+        .sapMITBItem {
+            padding-inline: 0 !important;
+            margin-inline: 0 !important;
+        }
+
+        // توسيط رأسي للتابات في الشريط (UI5 بيحط padding/margin رأسي مختلف فوق وتحت فالنص كان بينزل)
+        .sapMITBHead,
+        .sapMITBItem {
+            display: flex !important;
+            align-items: center !important;
+            height: 100% !important;
+        }
+
+        // الأجزاء الداخلية تاخد ارتفاع الشريط الجديد بدل ارتفاع UI5 الثابت
+        .sapMITBHead,
+        .sapMITBHeadWrapper,
+        .sapMITBScrollContainer,
+        .sapMITBItem {
+            min-height: inherit;
+        }
+
+        // هامش داخلي موحد للكارت: أول pill بيبدأ على نفس خط الخانات اللي تحته
+        .sapMITH {
+            padding-inline: .5rem !important;
+            margin-inline: 0 !important;
+        }
+
+        .sapMITBFilter {
+            position: relative;
+            background: transparent !important;
+            box-shadow: none !important;
+            border-radius: 0;
+            display: flex !important;
+            align-items: center !important;
+            height: 100% !important;
+            padding-block: 0 !important;
+            margin-block: 0 !important;
+            padding-inline: $tab-gap-half !important;
+            cursor: pointer;
+
+            .sapMITBFilterWrapper {
+                display: flex !important;
+                align-items: center !important;
+                height: auto !important;
+                padding-block: 0 !important;
+                margin-block: 0 !important;
+            }
+
+            // اسم التاب نفسه هو الـ pill (نفس الخط والوزن في كل الحالات عشان العرض ما يتغيرش لما التاب يتختار)
+            .sapMITBText {
+                display: inline-block !important;
+                padding: $tab-pad-y $tab-pad-x !important;
+                border-radius: 999px !important;
+                background: transparent !important;
+                color: #4b5563 !important;
+                font-size: .875rem !important;
+                font-weight: 600 !important;
+                line-height: 1.3 !important;
+                letter-spacing: .005em;
+                margin-block: 0 !important;
+                position: relative;
+                top: $tab-nudge-y;
+                @include transition(background-color, color, box-shadow);
+            }
+
+            // الخط اللي تحت التاب: بيتفتح من النص عند الـ hover ويثبت عند الاختيار
+            &::after {
+                content: "" !important;
+                display: block !important;
+                position: absolute;
+                left: $tab-gap-half;
+                right: $tab-gap-half;
+                bottom: 0;
+                height: 3px;
+                border-radius: 3px 3px 0 0;
+                background: $primary;
+                transform: scaleX(0);
+                transform-origin: center;
+                transition: transform $dur $ease;
+                pointer-events: none;
+            }
+
+            &:hover::after,
+            &.sapMITBSelected::after,
+            &.sapMITBSelected:hover::after,
+            &.sapMITBSelected:focus::after {
+                transform: scaleX(1);
+            }
+
+            // hover / لحظة الضغط على تاب غير مختار: تظليل أزرق فاتح
+            &:hover .sapMITBText,
+            &:active .sapMITBText {
+                background: rgba($primary, .08) !important;
+                color: $primary !important;
+            }
+
+            // التاب المختار: أزرق مليان بنص أبيض وظل خفيف — ثابت في كل الحالات (عادي / hover / ضغط / focus)
+            &.sapMITBSelected,
+            &.sapMITBSelected:hover,
+            &.sapMITBSelected:active,
+            &.sapMITBSelected:focus {
+                .sapMITBText {
+                    background: $primary !important;
+                    color: $text-on-bar !important;
+                    box-shadow: 0 2px 6px rgba($primary, .28) !important;
+                }
+            }
+        }
+
+        // إلغاء إطار الـ focus
+        .sapMITBFilter,
+        .sapMITBFilter .sapMITBFilterWrapper,
+        .sapMITBFilter .sapMITBText {
+
+            &,
+            &:focus,
+            &:focus-visible,
+            &:focus-within,
+            &:active {
+                outline: none !important;
+            }
+        }
+
+        // إلغاء خط الاختيار الافتراضي بتاع UI5 (من غير الـ ::after بتاع التاب نفسه)
+        .sapMITBFilter .sapMITBFilterWrapper,
+        .sapMITBFilter .sapMITBText {
+
+            &::before,
+            &::after {
+                display: none !important;
+            }
+        }
+
+        .sapMITBFilter::before {
+            display: none !important;
+        }
+
+        .sapMITBFilter .sapMITBFilterWrapper {
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+
+        .sapMITBFilter .sapMITBText {
+            border: 0 !important;
+        }
+    }
+
+    // ---- Section card (الفلتر + كل جدول) ----
+    .aamlSection {
+        background: $bg-card;
+        border: 1px solid $border-color;
+        border-radius: $radius;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+        overflow-x: auto;
+        overflow-y: hidden;
+        margin-top: 1rem;
+        @include transition(border-color);
+
+        &:hover {
+            border-color: $primary-light;
+        }
+    }
+
+    // ---- Filter bar ----
+    // UI5 بيلف كل عنصر جوه HBox/VBox في div.sapMFlexItem، فمحاذاة الأزرار بالـ align-self ما كانتش بتشتغل.
+    // الحل: الـ wrappers بتتحول لـ display: contents، فالـ labels والخانات والأزرار بتبقى grid items مباشرة
+    // على صفّين مشتركين: صف الـ labels، وصف الخانات والأزرار (الأزرار بتبدأ من نفس بداية الخانات بالظبط).
+    .aamlFilterBar {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1.3fr) repeat(5, minmax(0, 1fr)) minmax(0, 1.25fr) auto;
+        grid-template-rows: auto auto;
+        grid-auto-flow: column;
+        gap: 0 .75rem;
+        align-items: start;
+        padding: 1rem .75rem 1.1rem;
+        background: #fbfcfe;
+
+        >.sapMFlexItem,
+        .aamlFilterField {
+            display: contents !important;
+        }
+
+        .aamlFilterField,
+        .sapMInput {
+            width: 100% !important;
+            min-width: 0;
+        }
+
+        // الشاشات الضيقة: كل خانة في خلية لوحدها (label فوق الخانة) والأزرار بتنزل مع آخر صف
+        @media (max-width: 1100px) {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-rows: none;
+            grid-auto-flow: row;
+            gap: .75rem;
+            align-items: end;
+
+            >.sapMFlexItem {
+                display: block !important;
+            }
+
+            .aamlFilterField {
+                display: flex !important;
+            }
+        }
+
+        @media (max-width: 700px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    .aamlFilterField {
+        .sapMLabel {
+            font-size: .68rem;
+            font-weight: 700;
+            letter-spacing: .02em;
+            text-transform: uppercase;
+            color: #6b7280;
+            margin-bottom: .3rem;
+            max-width: none;
+            overflow: visible;
+            text-overflow: clip;
+            white-space: nowrap;
+        }
+
+        // الخانة نفسها: نفس ارتفاع وحواف الأزرار، من غير أي margin من UI5 عشان تقف على نفس الخط مع الأزرار
+        .sapMInput,
+        .sapMInputBase {
+            margin: 0 !important;
+        }
+
+        .sapMInputBaseContentWrapper {
+            height: $field-h !important;
+            box-sizing: border-box !important;
+            background: $bg-card !important;
+            border: 1px solid #d0d5dd !important;
+            border-radius: $ctl-radius !important;
+            // الخط السفلي تحت الخانة
+            box-shadow: inset 0 -2px 0 #94a3b8 !important;
+            outline: none !important;
+            @include transition(border-color, box-shadow);
+
+            &::before,
+            &::after {
+                display: none !important;
+            }
+
+            &:hover {
+                border-color: $primary-light !important;
+                box-shadow: inset 0 -2px 0 $primary-light !important;
+            }
+
+            // focus: حدود زرقا واحدة + خط سفلي أزرق + هالة خفيفة (بدل الإطار المزدوج)
+            &.sapMFocus,
+            &:focus-within {
+                background: $bg-card !important;
+                border-color: $primary !important;
+                box-shadow: inset 0 -2px 0 $primary, 0 0 0 3px rgba($primary, .12) !important;
+                outline: none !important;
+            }
+        }
+
+        // UI5 بيرسم إطار focus إضافي على العناصر الداخلية للخانة (ده اللي كان بيعمل الإطار المزدوج)
+        .sapMInputBase,
+        .sapMInputBase:focus,
+        .sapMInputBaseInner,
+        .sapMInputBaseInner:focus,
+        .sapMInputBaseInner:focus-visible {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        .sapMInputBase::before,
+        .sapMInputBase::after {
+            display: none !important;
+        }
+
+        .sapMInputBaseInner {
+            height: 100% !important;
+            box-sizing: border-box !important;
+            padding-inline: .75rem !important;
+            font-size: .85rem !important;
+            color: #1f2937;
+
+            &::placeholder {
+                font-style: normal;
+                color: #9ca3af;
+            }
+        }
+    }
+
+    // ---- Go / Clear: نفس الأبعاد والشكل ومحاذاة تامة مع الخانات ----
+    .aamlFilterActions {
+        justify-self: end;
+        align-self: end;
+        white-space: nowrap;
+
+        // label مخفي بنفس ارتفاع باقي الـ labels عشان الأزرار تقف على نفس خط الخانات
+        .sapMLabel {
+            visibility: hidden;
+        }
+
+        .aamlFilterButtons {
+            display: flex !important;
+            align-items: center;
+            gap: .5rem;
+            height: $field-h;
+        }
+
+        .aamlBtn.sapMBtn {
+            box-sizing: border-box;
+            width: 5.75rem !important;
+            min-width: 5.75rem !important;
+            height: $field-h !important;
+            min-height: $field-h !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            cursor: pointer;
+
+            // إلغاء إطار الـ focus (الحدود الزرقا + الدايرة البيضا)
+            &,
+            &:focus,
+            &:focus-visible,
+            &:active,
+            .sapMBtnInner:focus,
+            .sapMBtnInner:focus-visible {
+                outline: none !important;
+            }
+
+            &::before,
+            &::after,
+            .sapMBtnInner::before,
+            .sapMBtnInner::after,
+            .sapMBtnFocusDomRef::before,
+            .sapMBtnFocusDomRef::after {
+                display: none !important;
+            }
+
+            // المحتوى (أيقونة + نص) متوسط أفقيًا ورأسيًا
+            .sapMBtnInner {
+                box-sizing: border-box;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                gap: .4rem;
+                width: 100% !important;
+                height: 100% !important;
+                min-width: 0;
+                padding: 0 .75rem !important;
+                border: 1px solid transparent !important;
+                border-radius: $ctl-radius !important;
+                box-shadow: none !important;
+                font-size: .85rem !important;
+                font-weight: 600;
+                line-height: 1;
+                transition: background-color $dur $ease, border-color $dur $ease,
+                    color $dur $ease, box-shadow $dur $ease !important;
+            }
+
+            .sapMBtnContent,
+            .sapMBtnIcon {
+                margin: 0 !important;
+                padding: 0 !important;
+                color: inherit !important;
+                line-height: 1;
+            }
+
+            .sapMBtnIcon {
+                font-size: 1rem;
+            }
+        }
+
+        // Go: أزرق مليان — لون الضغط = لون الـ hover (ثابت)
+        .aamlBtn.aamlBtnGo.sapMBtn {
+            .sapMBtnInner {
+                background: $primary !important;
+                border-color: $primary !important;
+                color: $text-on-bar !important;
+            }
+
+            &:hover .sapMBtnInner,
+            &:active .sapMBtnInner,
+            &:focus .sapMBtnInner,
+            .sapMBtnInner.sapMBtnHoverable:hover,
+            .sapMBtnInner.sapMBtnActive {
+                background: $primary-dark !important;
+                border-color: $primary-dark !important;
+                color: $text-on-bar !important;
+                box-shadow: 0 3px 8px rgba($primary, .3) !important;
+            }
+        }
+
+        // Clear: أبيض بحدود وكتابة حمرا — لون الضغط = لون الـ hover (ثابت)
+        .aamlBtn.aamlBtnClear.sapMBtn {
+            .sapMBtnInner {
+                background: $bg-card !important;
+                border-color: rgba(#dc2626, .4) !important;
+                color: #b91c1c !important;
+            }
+
+            &:hover .sapMBtnInner,
+            &:active .sapMBtnInner,
+            &:focus .sapMBtnInner,
+            .sapMBtnInner.sapMBtnHoverable:hover,
+            .sapMBtnInner.sapMBtnActive {
+                background: rgba(#dc2626, .08) !important;
+                border-color: #dc2626 !important;
+                color: #b91c1c !important;
+                box-shadow: 0 3px 8px rgba(#dc2626, .18) !important;
+            }
+        }
+    }
+
+    // ---- Card header toolbar (عنوان الجدول + زرار refresh) ----
+    .sapMTB.aamlTableToolbar {
+        background: $bg-card !important;
+        border: 0;
+        border-bottom: 1px solid $border-color !important;
+        padding: 0 .75rem !important;
+        height: 3rem !important;
+
+        .sapMTitle {
+            color: $primary-dark;
+            font-weight: 700;
+        }
+
+        .aamlToolbarIcon {
+            color: $primary;
+            font-size: 1rem;
+            margin-inline-end: .5rem;
+        }
+
+        // زرار الـ refresh: دايرة مربعة 2rem والأيقونة في نصها بالظبط
+        .sapMBtn {
+            box-sizing: border-box;
+            width: 2rem !important;
+            min-width: 2rem !important;
+            height: 2rem !important;
+            min-height: 2rem !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: 0 !important;
+            border-radius: 50% !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            cursor: pointer;
+
+            .sapMBtnInner {
+                box-sizing: border-box;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 100% !important;
+                height: 100% !important;
+                min-width: 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                border: 0 !important;
+                border-radius: 50% !important;
+                box-shadow: none !important;
+                outline: none !important;
+                @include transition(background-color);
+            }
+
+            // UI5 بيحط عرض ثابت وهوامش على الأيقونة والمحتوى، وده اللي بيزحزحها عن المركز
+            .sapMBtnContent,
+            .sapMBtnIcon,
+            .sapMBtnIcon.sapUiIcon {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: auto !important;
+                min-width: 0 !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                line-height: 1 !important;
+                text-align: center;
+                color: $primary !important;
+            }
+
+            .sapMBtnIcon {
+                font-size: 1.1rem;
+            }
+
+            &:hover .sapMBtnInner {
+                background: rgba($primary, .1) !important;
+            }
+
+            &:active .sapMBtnInner {
+                background: rgba($primary, .18) !important;
+            }
+        }
+    }
+
+    // ---- Table ----
+    .aamlTable {
+
+        // 1) ممنوع تكسير الكلمة نفسها (UI5 بيحط word-break: break-word فالأعمدة كانت بتتضغط لحرف واحد)
+        .sapMText,
+        .sapMLabel,
+        .sapMListTblHeaderCell,
+        .sapMListTblCell {
+            word-break: normal !important;
+            overflow-wrap: normal !important;
+            hyphens: manual;
+        }
+
+        // 2) العناوين والخلايا على سطر واحد؛ الأعمدة الطويلة (رسائل) بتاخد class aamlWrap وبتلف عادي
+        th .sapMText,
+        .sapMListTblHeaderCell .sapMText,
+        .sapMListTblCell .sapMText:not(.aamlWrap) {
+            white-space: nowrap !important;
+        }
+
+        .sapMText.aamlWrap {
+            white-space: normal !important;
+            min-width: 14rem;
+        }
+
+        // 3) رأس الجدول
+        .sapMListTblHeaderCell,
+        th {
+            background: #f8fafc !important;
+            color: $primary-dark !important;
+            font-size: .8rem !important;
+            font-weight: 700 !important;
+            letter-spacing: .01em;
+            text-transform: none;
+            border-bottom: 2px solid rgba($primary, .2) !important;
+            white-space: nowrap;
+            padding: .5rem .625rem !important;
+        }
+
+        // UI5 بيحط padding داخلي إضافي على محتوى رأس العمود فبيزحزح العنوان عن الخلية اللي تحته
+        .sapMColumnHeaderContent,
+        .sapMListTblHeaderCell>* {
+            padding-inline: 0 !important;
+            margin-inline: 0 !important;
+        }
+
+        // 4) مسافات ثابتة ومتساوية بين الأعمدة
+        .sapMListTblCell {
+            padding: .5rem .625rem !important;
+            vertical-align: middle;
+        }
+
+        // عمود متوسّط (Status): العنوان والداتا في النص، والـ pill تحت العنوان بالظبط
+        // الكلاس بيتحط على الـ Column في الـ View: styleClass="aamlColCenter"
+        // وUI5 بيطبقه على الـ header وكل خلية في العمود
+        th.aamlColCenter,
+        td.aamlColCenter,
+        .sapMListTblHeaderCell.aamlColCenter,
+        .sapMListTblCell.aamlColCenter {
+            text-align: center !important;
+        }
+
+        th.aamlColCenter .sapMColumnHeaderContent,
+        th.aamlColCenter .sapMText,
+        .sapMListTblHeaderCell.aamlColCenter .sapMColumnHeaderContent,
+        .sapMListTblHeaderCell.aamlColCenter .sapMText {
+            display: block;
+            width: 100%;
+            text-align: center !important;
+        }
+
+        td.aamlColCenter .aamlStatus.sapMObjStatus,
+        .sapMListTblCell.aamlColCenter .aamlStatus.sapMObjStatus {
+            margin-inline: auto !important;
+        }
+
+        // أعمدة UI5 الداخلية (highlight / navigation): من غير padding عشان ماتعملش فراغ في أول الجدول
+        .sapMListTblHighlightCol,
+        .sapMListTblHighlightCell,
+        .sapMListTblNavCol,
+        .sapMListTblNavCell {
+            padding: 0 !important;
+        }
+
+        // 5) hover بسيط على الصف: لون خلفية بس
+        .sapMLIBHoverable:hover,
+        .sapMListTblRow:hover {
+            background-color: rgba($primary, .05) !important;
+        }
+
+        .sapMLIB {
+            @include transition(background-color);
+        }
+
+        // زرار "More"
+        .sapMGrowingListTrigger {
+            color: $primary;
+            font-weight: 600;
+        }
+    }
+
+    // ---- Status كـ pill ----
+    .aamlStatus.sapMObjStatus {
+        // كل الـ pills بنفس العرض والارتفاع والنص في النص
+        box-sizing: border-box;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 5.5rem;
+        min-width: 5.5rem;
+        height: 1.5rem;
+        padding: 0 .55rem !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 4px;
+        font-size: .75rem;
+        font-weight: 600;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+
+        // الأيقونة (لو موجودة) والنص الداخلي: من غير هوامش UI5 عشان ما يزحزحوش النص عن النص
+        .sapMObjStatusIcon,
+        .sapMObjStatusText,
+        .sapMObjStatusTitle {
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+            color: inherit !important;
+        }
+
+        .sapMObjStatusText {
+            display: block;
+            width: 100%;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        // Ready / Success
+        &.sapMObjStatusSuccess {
+            background: rgba(#16a34a, .14) !important;
+            color: #15803d !important;
+        }
+
+        // Blocked / Error
+        &.sapMObjStatusError {
+            background: rgba(#dc2626, .12) !important;
+            color: #b91c1c !important;
+        }
+
+        // Waiting / Warning
+        &.sapMObjStatusWarning {
+            background: rgba($accent, .18) !important;
+            color: #b45309 !important;
+        }
+
+        // Info
+        &.sapMObjStatusInformation {
+            background: rgba($primary, .12) !important;
+            color: $primary-dark !important;
+        }
+
+        // بدون حالة
+        &.sapMObjStatusNone {
+            background: rgba(#6b7280, .12) !important;
+            color: #4b5563 !important;
+        }
+    }
+
+    // ---- Table: خطوط فاصلة أنعم + pointer ----
+    .aamlTable {
+
+        // فواصل الصفوف: لون فاتح بدل الرمادي الغامق
+        .sapMLIB,
+        .sapMListTblCell {
+            border-bottom-color: #eceff4 !important;
+        }
+
+        // الماوس بيبقى pointer على الصف وخلاياه ونصوصه
+        .sapMLIB,
+        .sapMListTblRow,
+        .sapMListTblCell,
+        .sapMListTblCell .sapMText,
+        .sapMListTblCell .sapMObjStatus {
+            cursor: pointer !important;
+        }
+    }
+
+    // pointer للـ tabs وأزرار الكروت
+    .aamlTabs .sapMITBFilter,
+    .aamlTabs .sapMITBFilter *,
+    .aamlTableToolbar .sapMBtn,
+    .aamlTableToolbar .sapMBtn * {
+        cursor: pointer !important;
+    }
+}
+
+// ---------- 12. Responsive ----------
+@media (max-width: 900px) {
+    .aamlHeader {
+
+        .aamlHeaderCompany,
+        .aamlHeaderSubtitle {
+            display: none;
+        }
+    }
+}
+
+// ---------- 13. Accessibility: تقليل الحركة ----------
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+// ---------- 15. Shared Nursing page ----------
+// نفس تصميم Material Report: كروت + خانات بنفس الشكل + أزرار + pills.
+// بيعيد استخدام aamlSection / aamlFilterBar / aamlTableToolbar / aamlTable / aamlStatus / aamlBtn من فوق.
+
+// نفس شكل خانة الـ Input بتاعة الفلتر، عشان نستخدمه في خانة الكمية جوه الجدول
+@mixin aaml-input-skin {
+
+    .sapMInputBaseContentWrapper {
+        height: $field-h !important;
+        box-sizing: border-box !important;
+        background: $bg-card !important;
+        border: 1px solid #d0d5dd !important;
+        border-radius: $ctl-radius !important;
+        box-shadow: inset 0 -2px 0 #94a3b8 !important;
+        outline: none !important;
+        @include transition(border-color, box-shadow);
+
+        &::before,
+        &::after {
+            display: none !important;
+        }
+
+        &:hover {
+            border-color: $primary-light !important;
+            box-shadow: inset 0 -2px 0 $primary-light !important;
+        }
+
+        &.sapMFocus,
+        &:focus-within {
+            background: $bg-card !important;
+            border-color: $primary !important;
+            box-shadow: inset 0 -2px 0 $primary, 0 0 0 3px rgba($primary, .12) !important;
+            outline: none !important;
+        }
+    }
+
+    .sapMInputBase,
+    .sapMInputBase:focus,
+    .sapMInputBaseInner,
+    .sapMInputBaseInner:focus,
+    .sapMInputBaseInner:focus-visible {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    .sapMInputBase::before,
+    .sapMInputBase::after {
+        display: none !important;
+    }
+
+    .sapMInputBaseInner {
+        height: 100% !important;
+        box-sizing: border-box !important;
+        padding-inline: .75rem !important;
+        font-size: .85rem !important;
+        color: #1f2937;
+    }
+}
+
+.app-page {
+
+    // أول كارت تحت عنوان الصفحة: نفس مسافة Material Report (1rem بين العنوان والكارت)
+    // هناك العنوان عليه sapUiSmallMarginBottom (1rem)، وهنا العنوان من غير margin والكارت عليه 1rem
+    .aamlSection.aamlSectionFirst {
+        margin-top: 1rem;
+    }
+
+    // ---- كارت التفاصيل: 4 خانات في صف واحد ----
+    .aamlFilterBar.aamlFormBar {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+
+        @media (max-width: 1100px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @media (max-width: 700px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    // خانة Cost Center (للقراءة بس)
+    .aamlFilterField .aamlReadonly {
+        .sapMInputBaseContentWrapper {
+            background: #f3f4f6 !important;
+        }
+
+        .sapMInputBaseInner {
+            color: #374151 !important;
+            -webkit-text-fill-color: #374151 !important;
+        }
+    }
+
+    // ---- Select (Hospital / Modality) بنفس شكل الخانات ----
+    .aamlFilterField .sapMSlt {
+        box-sizing: border-box;
+        width: 100% !important;
+        max-width: none !important;
+        height: $field-h !important;
+        min-height: $field-h !important;
+        margin: 0 !important;
+        background: $bg-card !important;
+        border: 1px solid #d0d5dd !important;
+        border-radius: $ctl-radius !important;
+        box-shadow: inset 0 -2px 0 #94a3b8 !important;
+        outline: none !important;
+        cursor: pointer;
+        @include transition(border-color, box-shadow);
+
+        &::before,
+        &::after {
+            display: none !important;
+        }
+
+        &:hover {
+            border-color: $primary-light !important;
+            box-shadow: inset 0 -2px 0 $primary-light !important;
+        }
+
+        &.sapMSltFocused,
+        &:focus,
+        &:focus-within {
+            border-color: $primary !important;
+            box-shadow: inset 0 -2px 0 $primary, 0 0 0 3px rgba($primary, .12) !important;
+            outline: none !important;
+        }
+
+        .sapMSltLabel {
+            padding-inline: .75rem !important;
+            font-size: .85rem !important;
+            color: #1f2937;
+            line-height: calc(#{$field-h} - 2px) !important;
+        }
+
+        .sapMSltArrow {
+            height: 100% !important;
+            color: $primary;
+        }
+    }
+
+    // ---- SearchField بنفس شكل الخانات ----
+    .aamlFilterField .sapMSF {
+        box-sizing: border-box !important;
+        width: 100% !important;
+        height: $field-h !important;
+        min-height: $field-h !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+
+        .sapMSFF {
+            box-sizing: border-box;
+            margin: 0 !important;
+            height: $field-h !important;
+            background: $bg-card !important;
+            border: 1px solid #d0d5dd !important;
+            border-radius: $ctl-radius !important;
+            box-shadow: inset 0 -2px 0 #94a3b8 !important;
+            outline: none !important;
+            @include transition(border-color, box-shadow);
+
+            &::before,
+            &::after {
+                display: none !important;
+            }
+
+            &:hover {
+                border-color: $primary-light !important;
+                box-shadow: inset 0 -2px 0 $primary-light !important;
+            }
+
+            &:focus-within {
+                border-color: $primary !important;
+                box-shadow: inset 0 -2px 0 $primary, 0 0 0 3px rgba($primary, .12) !important;
+            }
+        }
+
+        .sapMSFI {
+            font-size: .85rem !important;
+            color: #1f2937;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+    }
+
+    // ---- صف البحث: خانة البحث + زرار Add ----
+    .aamlFilterBar.aamlSearchBar {
+        grid-template-columns: minmax(0, 26rem) auto;
+        justify-content: start;
+        align-items: end;
+        border-bottom: 1px solid $border-color;
+
+        // خانة البحث والزرار على نفس الخط بالظبط: نفس الارتفاع ومحاذاتهم من تحت
+        .aamlFilterField .sapMSF,
+        .aamlFilterButtons {
+            align-self: end;
+            height: $field-h !important;
+            margin: 0 !important;
+        }
+
+        .aamlFilterActions {
+            justify-self: start;
+        }
+
+        @media (max-width: 1100px) {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+    }
+
+    // ---- زراير أعرض شوية (Add Material / Post) ----
+    .aamlFilterActions {
+
+        .aamlBtn.aamlBtnWide.sapMBtn {
+            width: auto !important;
+            min-width: 7.5rem !important;
+
+            .sapMBtnInner {
+                padding: 0 1rem !important;
+            }
+        }
+
+        // Post: أخضر — كل الحالات (عادي / hover / focus / ضغط) لونها محدد صراحةً ومفيش أي أسود
+        .aamlBtn.aamlBtnPost.sapMBtn {
+
+            .sapMBtnInner,
+            .sapMBtnInner.sapMBtnAccept,
+            .sapMBtnInner.sapMBtnEmphasized {
+                background: #16a34a !important;
+                background-color: #16a34a !important;
+                background-image: none !important;
+                border-color: #16a34a !important;
+                color: $text-on-bar !important;
+                text-shadow: none !important;
+            }
+
+            // الأيقونة والنص جوه الزرار دايمًا أبيض
+            .sapMBtnContent,
+            .sapMBtnIcon,
+            .sapMBtnInner bdi {
+                color: $text-on-bar !important;
+            }
+
+            // hover بس (من غير :focus، عشان الزرار ما يفضلش بلون الـ hover بعد الضغط)
+            &:hover .sapMBtnInner,
+            .sapMBtnInner.sapMBtnHoverable:hover {
+                background: #22c55e !important;
+                background-color: #22c55e !important;
+                background-image: none !important;
+                border-color: #22c55e !important;
+                color: $text-on-bar !important;
+                box-shadow: 0 3px 10px rgba(#16a34a, .35) !important;
+                outline: none !important;
+            }
+
+            &:active .sapMBtnInner,
+            .sapMBtnInner.sapMBtnActive,
+            .sapMBtnInner.sapMBtnActive:hover {
+                background: #15a34a !important;
+                background-color: #15a34a !important;
+                border-color: #15803d !important;
+                color: $text-on-bar !important;
+                box-shadow: none !important;
+            }
+        }
+
+        // Add Material: الـ hover أزرق أفتح بدل الكحلي الغامق
+        .aamlBtn.aamlBtnGo.aamlBtnWide.sapMBtn {
+
+            // بعد الضغط (focus) من غير hover: يرجع للون الأساسي بدل ما يفضل "معلّق"
+            &:focus:not(:hover) .sapMBtnInner {
+                background: $primary !important;
+                border-color: $primary !important;
+                color: $text-on-bar !important;
+                box-shadow: none !important;
+            }
+
+            // hover بس
+            &:hover .sapMBtnInner,
+            .sapMBtnInner.sapMBtnHoverable:hover {
+                background: $primary-light !important;
+                background-image: none !important;
+                border-color: $primary-light !important;
+                color: $text-on-bar !important;
+                box-shadow: 0 3px 10px rgba($primary, .35) !important;
+            }
+
+            &:active .sapMBtnInner,
+            .sapMBtnInner.sapMBtnActive {
+                background: $primary !important;
+                border-color: $primary-dark !important;
+                color: $text-on-bar !important;
+                box-shadow: none !important;
+            }
+        }
+    }
+
+    // ---- فوتر الكارت (زرار Post) ----
+    .aamlCardFooter {
+        display: flex !important;
+        // الخط اللي فوق الزرار يكمّل لآخر الكارت (aamlFilterActions كان بيعمل align-self: end فالفوتر كان بيتقلّص على قد الزرار)
+        align-self: stretch !important;
+        justify-self: stretch !important;
+        width: 100% !important;
+        box-sizing: border-box;
+        justify-content: flex-end;
+        align-items: center;
+        padding: .75rem;
+        background: #fbfcfe;
+        border-top: 1px solid $border-color;
+    }
+
+    // ---- خانة الكمية جوه الجدول: متوسّطة في العمود ----
+    .aamlQtyInput {
+        width: 100% !important;
+        max-width: 7rem;
+        margin: 0 auto !important;
+        @include aaml-input-skin;
+    }
+
+    // نص بيلف عادي من غير ما يوسّع العمود (الأعمدة كلها بنفس العرض)
+    .aamlTable .sapMListTblCell .sapMText.aamlWrapFit.aamlWrapFit {
+        white-space: normal !important;
+        min-width: 0 !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    // توسيط كل حاجة في الخلايا المتوسّطة (زرار الحذف / الـ pill / الكمية)
+    .aamlTable td.aamlColCenter {
+        text-align: center !important;
+        vertical-align: middle;
+    }
+
+    // ---- زرار الحذف: دايرة حمرا فاتحة عند الـ hover ----
+    .aamlDeleteBtn.sapMBtn {
+        box-sizing: border-box;
+        width: 2rem !important;
+        min-width: 2rem !important;
+        height: 2rem !important;
+        min-height: 2rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 50% !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        cursor: pointer;
+
+        &,
+        &:focus,
+        &:focus-visible,
+        &:active,
+        .sapMBtnInner:focus,
+        .sapMBtnInner:focus-visible {
+            outline: none !important;
+        }
+
+        &::before,
+        &::after,
+        .sapMBtnInner::before,
+        .sapMBtnInner::after {
+            display: none !important;
+        }
+
+        .sapMBtnInner {
+            box-sizing: border-box;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            min-width: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 50% !important;
+            box-shadow: none !important;
+            @include transition(background-color);
+        }
+
+        .sapMBtnContent,
+        .sapMBtnIcon {
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+            color: #b91c1c !important;
+        }
+
+        &:hover .sapMBtnInner {
+            background: rgba(#dc2626, .1) !important;
+        }
+
+        &:active .sapMBtnInner {
+            background: rgba(#dc2626, .18) !important;
+        }
+    }
+
+    // ---- شريط الملاحظة ----
+    .aamlHint.sapMMsgStrip {
+        border-radius: $radius;
+    }
+}
+
+// ---------- 16. Case Consumption page ----------
+// بيعيد استخدام نفس الكلاسات (aamlSection / aamlFilterBar / aamlTable / aamlStatus / aamlCardFooter ...) والإضافات هنا بس.
+.app-page {
+
+    // السطر الفرعي تحت عنوان الصفحة
+    .aamlPageSubtitle.sapMText {
+        display: block;
+        margin-top: .125rem;
+        color: #6b7280;
+        font-size: .85rem;
+    }
+
+    // فلتر بـ 5 خانات + الأزرار (الـ aamlFilterBar الأصلي متظبط لـ 7 خانات)
+    .aamlFilterBar.aamlFilter5 {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) auto;
+
+        @media (max-width: 1100px) {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        @media (max-width: 700px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    // شريط الفترة: From + To + زرار Get Consumption جنبهم
+    .aamlFilterBar.aamlFilterRange {
+        grid-template-columns: minmax(0, 14rem) minmax(0, 14rem) auto minmax(0, 1fr);
+
+        @media (max-width: 1100px) {
+            grid-template-columns: repeat(2, minmax(0, 14rem)) auto;
+        }
+
+        @media (max-width: 700px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    // كارت الفلاتر: 4 خانات (Hospital / Modality / Material / Status) + Go / Clear
+    .aamlFilterBar.aamlFilter4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+
+        @media (max-width: 1100px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+        }
+
+        @media (max-width: 700px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    // الجدول الواسع (15 عمود): padding وخط أصغر شوية عشان كله يبان من غير سكرول أفقي
+    .aamlTableFit .sapMListTblCell,
+    .aamlTableFit .sapMListTblHeaderCell {
+        padding-left: .35rem !important;
+        padding-right: .35rem !important;
+    }
+
+    .aamlTableFit .sapMListTblCell .sapMText,
+    .aamlTableFit .sapMListTblCell .sapMObjectStatusText {
+        font-size: .78rem;
+    }
+
+    // الصف المختار
+    .aamlTable .sapMLIB.sapMLIBSelected,
+    .aamlTable .sapMLIB.sapMLIBSelected:hover {
+        background-color: rgba($primary, .08) !important;
+    }
+
+    // Material + الوصف (ObjectIdentifier) متوسّطين وبنفس ألوان الصفحة
+    .aamlTable .sapMObjectIdentifier {
+        display: block;
+        text-align: center;
+    }
+
+    .aamlTable .sapMObjectIdentifierTitle,
+    .aamlTable .sapMObjectIdentifierTitle .sapMText,
+    .aamlTable .sapMObjectIdentifierTitle .sapMLnk {
+        color: $primary-dark !important;
+        font-weight: 600 !important;
+    }
+
+    .aamlTable .sapMObjectIdentifierText,
+    .aamlTable .sapMObjectIdentifierText .sapMText {
+        color: #6b7280 !important;
+        font-size: .75rem !important;
+    }
+
+    // الكارتين (التفاصيل + User Actions) جنب بعض، ويتكسروا تحت بعض في الشاشات الضيقة
+    .aamlSplit {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 0 1rem;
+
+        >.sapMFlexItem:first-child,
+        >.aamlSection:first-child {
+            flex: 1 1 30rem;
+            min-width: 0;
+        }
+
+        >.sapMFlexItem:last-child,
+        >.aamlSection:last-child {
+            flex: 0 0 22rem;
+        }
+    }
+
+    // نص الـ User Actions
+    .aamlActionsText.sapMText {
+        display: block;
+        padding: 1rem;
+        color: #374151;
+        font-size: .85rem;
+        line-height: 1.5;
+        white-space: normal;
+    }
+}
+
+// (اتشالت قاعدة الـ transform: scale بتاعة الـ popovers: مبقاش ليها لازمة بعد ما الزوم اتشال،
+// لأن الـ popovers دلوقتي بتتصغّر مع الـ rem زي باقي الصفحة)
+
+.sapMSuggestionsPopover,
+.sapMSuggestionsPopover.sapMPopover {
+    border-radius: $radius !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .15) !important;
+    overflow: hidden;
+}
+
+
+// ============================================================
+// 17. Case Consumption: الجدول بعرض الكارت كله + خطوط فاصلة خفيفة + مكان الـ Message
+//     ضيف البلوك ده في آخر style.scss (بعد القسم 16)
+//     (لو كنت ضفت النسخة القديمة من البلوك ده، امسحها وحط دي بداله)
+// ============================================================
+.app-page {
+
+    // الكارت ما بيعملش scroll أفقي: الجدول (fixedLayout + أعمدة بالنسبة %) بياخد عرض الكارت بالظبط
+    .aamlSection.aamlSectionFit {
+        overflow: hidden;
+    }
+
+    .aamlTable.aamlTableFit {
+        width: 100%;
+
+        // ---- العناوين: سطر واحد دايمًا (الـ th في UI5 عليه كلاس sapMListTblCell كمان، فالقواعد اللي تحت مقصورة على tbody) ----
+        thead .sapMListTblHeaderCell .sapMText,
+        thead .sapMListTblHeaderCell .sapMColumnHeaderContent {
+            white-space: nowrap !important;
+        }
+
+        // ---- خانة الـ checkbox: نفس المحاذاة في الهيدر وفي الصفوف ----
+        th.sapMListTblSelCol,
+        td.sapMListTblSelCol {
+            padding: 0 !important;
+            text-align: center !important;
+            vertical-align: middle;
+
+            .sapMCb {
+                margin: 0 !important;
+            }
+        }
+
+        // ---- الخلايا (الصفوف بس): تلف جوه عمودها بدل ما توسّع الجدول ----
+        tbody .sapMListTblCell .sapMText:not(.aamlWrap),
+        tbody .sapMListTblCell .sapMObjectIdentifierText {
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+        }
+
+        // ---- Message: بتلف جوه عمودها وفي نص العمود تحت عنوانه ----
+        tbody .sapMText.aamlWrap.aamlMsg {
+            display: block;
+            min-width: 0 !important;
+            max-width: 100%;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+            text-align: center;
+            line-height: 1.35;
+        }
+
+        // ---- خطوط فاصلة بين الصفوف: نفس اللون وعلى عرض الصف كله (بما فيهم خانة الـ checkbox) ----
+        // والصف المختار ما بقاش ليه خط أزرق: بنفس اللون الخفيف
+        tbody>tr>td {
+            border-top: 0 !important;
+            border-bottom: 1px solid #e9edf3 !important;
+        }
+
+        tbody>tr.sapMLIBSelected>td,
+        tbody>tr.sapMLIBSelected:hover>td {
+            border-top: 0 !important;
+            border-bottom: 1px solid #e9edf3 !important;
+        }
+
+        tbody>tr:last-child>td {
+            border-bottom: 0 !important;
+        }
+    }
+}
+
+
+// ---------- 14. إزالة حدود العنصر المختار في الـ side nav نهائيًا ----------
+.sapTntSideNavigation {
+    .sapTntNLI {
+        border: 0 !important;
+        border-radius: 80 !important;
+        box-shadow: none !important;
+        outline: none !important;
+
+        &.sapTntNLISelected,
+        &:hover,
+        &:focus,
+        &:focus-within,
+        &:active {
+            border: 0 !important;
+            border-radius: 80 !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+        // أي عنصر جوه العنصر (الصف الداخلي، الأيقونة، النص) وكمان الـ pseudo-elements
+        *,
+        *::before,
+        *::after {
+            border: 0 !important;
+            border-radius: 80 !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+    }
+}
+
+
+// ============================================================
+// 18. Case Consumption: تحسينات (Select / DatePicker / فوتر الكارت / الأزرار المعطّلة)
+//     ضيف البلوك ده في آخر style.scss (بعد القسم 17).
+//     لازم يبقى في الآخر عشان يكسب على القواعد اللي قبله.
+// ============================================================
+.app-page {
+
+    // ---- placeholder عادي (مش italic) في كل الخانات بما فيها الـ DatePicker ----
+    .aamlFilterField .sapMInputBaseInner {
+
+        &::placeholder,
+        &::-webkit-input-placeholder {
+            font-style: normal !important;
+            color: #9ca3af !important;
+            opacity: 1;
+        }
+    }
+
+    // أيقونة التقويم جوه الـ DatePicker بنفس لون الأيقونات
+    .aamlFilterField .sapMInputBaseIconContainer .sapUiIcon {
+        color: $primary !important;
+    }
+
+    // ---- حالة الخطأ (تاريخ غلط): حدود حمرا بدل الأزرق ----
+    .aamlFilterField .sapMInputBaseContentWrapper.sapMInputBaseContentWrapperError {
+        border-color: #dc2626 !important;
+        box-shadow: inset 0 -2px 0 #dc2626 !important;
+
+        &.sapMFocus,
+        &:focus-within {
+            border-color: #dc2626 !important;
+            box-shadow: inset 0 -2px 0 #dc2626, 0 0 0 3px rgba(#dc2626, .14) !important;
+        }
+    }
+
+    // ---- Select (Status): السهم في مربع صغير بخط فاصل، وبيتلون عند الـ hover ----
+    .aamlFilterField .sapMSlt {
+        overflow: hidden;
+
+        .sapMSltArrow {
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            width: 2rem !important;
+            border-inline-start: 1px solid #e5e7eb;
+            @include transition(background-color);
+        }
+
+        &:hover .sapMSltArrow {
+            background: rgba($primary, .06);
+        }
+    }
+
+    // ---- فوتر الكارت: عداد الاختيار على الشمال وزرار Post على اليمين ----
+    .aamlCardFooter.aamlCardFooterSplit {
+        justify-content: space-between !important;
+        gap: 1rem;
+    }
+
+    .aamlSelCount.sapMText {
+        color: #6b7280;
+        font-size: .8rem;
+        font-weight: 600;
+    }
+
+    // ---- الأزرار المعطّلة (Post قبل ما تختار صف): باهتة ومن غير hover ----
+    .aamlBtn.sapMBtnDisabled,
+    .aamlBtn .sapMBtnInner.sapMBtnDisabled,
+    .aamlBtn[aria-disabled="true"] {
+        opacity: .45 !important;
+        filter: grayscale(.35);
+        pointer-events: none;
+    }
+
+    // ---- الـ checkbox جوه الجدول: من غير الإطار الأزرق السميك بعد الضغط ----
+    .aamlTable .sapMCb {
+
+        &,
+        &:focus,
+        &:focus-within,
+        .sapMCbBg,
+        &:focus .sapMCbBg {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+    }
+}
+
+// ---- قايمة الـ Select (الـ popup): خارج .app-page لأنها بتتحط في الـ static area ----
+.sapMSltPicker {
+    border: 1px solid #e5e7eb !important;
+    border-radius: $ctl-radius !important;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .15) !important;
+    overflow: hidden;
+
+    .sapMSelectList {
+        padding: .25rem !important;
+    }
+
+    .sapMSelectListItem,
+    .sapMSelectListItemBase {
+        box-sizing: border-box;
+        min-height: 2rem !important;
+        margin: .0625rem 0;
+        padding-inline: .75rem !important;
+        border: 0 !important;
+        border-radius: 6px !important;
+        font-size: .85rem !important;
+        color: #1f2937;
+        cursor: pointer;
+        outline: none !important;
+        @include transition(background-color, color);
+
+        &:hover {
+            background: rgba($primary, .07) !important;
+        }
+    }
+
+    // العنصر المختار: أزرق فاتح ثابت (حتى مع الـ hover)
+    .sapMSelectListItemBaseSelected,
+    .sapMSelectListItemBaseSelected:hover {
+        background: rgba($primary, .12) !important;
+        color: $primary-dark !important;
+        font-weight: 600;
+    }
+}
+
+
+// ============================================================
+// 19. كل الجداول (Case Consumption / Shared Nursing / Material Report)
+//     borders + رأس بلون الـ navbar + محاذاة + Status pill بحجم موحد
+//     لازم يفضل في آخر الملف عشان يكسب على الأقسام اللي قبله.
+//     (الـ class بيتكرر عشان نرفع الـ specificity فوق قواعد القسم 14 و17)
+// ============================================================
+$tbl-line: #d5deea; // لون الخطوط بين الصفوف والأعمدة
+$tbl-head-bg: $primary; // قريب من لون الـ navbar
+$tbl-head-line: rgba(255, 255, 255, .22); // فواصل الأعمدة جوه الرأس
+$cell-align: left; // محاذاة العنوان والمحتوى لكل الأعمدة (غير: center أو right)
+$pill-w: 7.5rem; // عرض كل الـ status pills (بقدر NeedsCorrection)
+$pill-w-fit: 6.75rem; // نفس الفكرة في جدول Case Consumption (خط أصغر)
+
+.app-page {
+
+    .aamlTable.aamlTable.aamlTable.aamlTable {
+
+        // ---------- 1) Borders بين الصفوف والأعمدة ----------
+        tbody>tr>td {
+            border-top: 0 !important;
+            border-bottom: 1px solid $tbl-line !important;
+            border-right: 1px solid $tbl-line !important;
+        }
+
+        tbody>tr.sapMLIBSelected>td,
+        tbody>tr.sapMLIBSelected:hover>td {
+            border-top: 0 !important;
+            border-bottom: 1px solid $tbl-line !important;
+            border-right: 1px solid $tbl-line !important;
+        }
+
+        tbody>tr:last-child>td {
+            border-bottom: 0 !important;
+        }
+
+        // العمود الفاضي اللي UI5 بيزوده في آخر الجدول (dummy): من غير خط ومن غير عرض،
+        // والعمود اللي قبله (آخر عمود حقيقي) من غير خط يمين، عشان ما يبقاش في خط زيادة بعد Message / SAP Document
+        td:last-child,
+        td.sapMListTblDummyCell,
+        th.sapMListTblDummyCell,
+        td.sapMListTblHighlightCell,
+        td.sapMListTblNavCell,
+        th.sapMListTblHighlightCol,
+        th.sapMListTblNavCol {
+            border-right: 0 !important;
+        }
+
+        td.sapMListTblDummyCell,
+        th.sapMListTblDummyCell {
+            width: 0 !important;
+            padding: 0 !important;
+            border-left: 0 !important;
+        }
+
+        tbody>tr>td:has(+ td.sapMListTblDummyCell),
+        tbody>tr>td:has(+ td:last-child:empty),
+        thead>tr>th:has(+ th.sapMListTblDummyCell),
+        thead>tr>th:has(+ th:last-child:empty) {
+            border-right: 0 !important;
+        }
+
+        // ---------- 2) رأس الجدول بلون قريب من الـ navbar ----------
+        thead>tr>th,
+        th.sapMListTblHeaderCell,
+        .sapMListTblHeaderCell {
+            background: $tbl-head-bg !important;
+            background-image: none !important;
+            color: $text-on-bar !important;
+            border-bottom: 2px solid $primary-dark !important;
+            border-right: 1px solid $tbl-head-line !important;
+        }
+
+        thead>tr>th:last-child,
+        th.sapMListTblHighlightCol,
+        th.sapMListTblNavCol {
+            border-right: 0 !important;
+        }
+
+        .sapMListTblHeaderCell,
+        .sapMListTblHeaderCell .sapMColumnHeaderContent,
+        .sapMListTblHeaderCell .sapMText,
+        .sapMListTblHeaderCell .sapMLabel,
+        .sapMListTblHeaderCell bdi,
+        .sapMListTblHeaderCell span {
+            color: $text-on-bar !important;
+        }
+
+        // ---------- 3) المحاذاة: العنوان والمحتوى تحته على نفس الخط ----------
+        thead>tr>th,
+        tbody>tr>td {
+            text-align: $cell-align !important;
+        }
+
+        th .sapMColumnHeaderContent,
+        th .sapMText,
+        td .sapMText,
+        td .sapMObjectIdentifier,
+        td .sapMText.aamlMsg {
+            display: block;
+            width: 100%;
+            text-align: $cell-align !important;
+        }
+
+        // ---------- 4) الاستثناء: عمود الـ Status (العنوان والـ pill في النص) ----------
+        // الأعمدة اللي عليها styleClass="aamlColCenter" في الـ View (Status / Remove / الكمية) بتفضل متوسّطة
+        thead>tr>th.aamlColCenter,
+        tbody>tr>td.aamlColCenter,
+        tbody>tr>td:has(.aamlStatus) {
+            text-align: center !important;
+        }
+
+        th.aamlColCenter .sapMColumnHeaderContent,
+        th.aamlColCenter .sapMText,
+        td.aamlColCenter .sapMText,
+        td:has(.aamlStatus) .sapMText {
+            text-align: center !important;
+        }
+    }
+
+    // ---------- 5) Status pill: كله بنفس عرض NeedsCorrection والنص جواه ----------
+    .aamlStatus.aamlStatus.sapMObjStatus {
+        box-sizing: border-box;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: $pill-w !important;
+        min-width: $pill-w !important;
+        max-width: none !important;
+        height: auto !important;
+        min-height: 1.5rem;
+        padding: .2rem .5rem !important;
+        overflow: visible !important;
+        white-space: nowrap !important;
+        line-height: 1.2 !important;
+        vertical-align: middle;
+
+        .sapMObjStatusText,
+        .sapMObjStatusTitle,
+        .sapMObjStatusIcon {
+            display: inline !important;
+            width: auto !important;
+            max-width: none !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            white-space: nowrap !important;
+            text-align: center !important;
+            line-height: 1.2 !important;
+        }
+    }
+
+    // ---------- 6) Case Consumption: الجدول كله ظاهر من غير scroll (الـ aside مفتوح أو مقفول) ----------
+    // الأعمدة بتتوزع حسب المحتوى (table-layout: auto) والعناوين والخلايا بتلف على سطرين لو احتاجت،
+    // والخط والـ padding أصغر شوية عشان الـ 15 عمود يتساعوا في عرض الكارت.
+    .aamlSection.aamlSectionFit {
+        overflow: hidden !important;
+    }
+
+    .aamlTableFit.aamlTableFit.aamlTableFit {
+
+        &,
+        &.sapMList {
+            overflow: hidden !important;
+        }
+
+        table,
+        .sapMListTbl {
+            table-layout: auto !important;
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+
+        thead>tr>th,
+        tbody>tr>td {
+            width: auto !important;
+            padding: .4rem .3rem !important;
+            overflow: visible !important;
+            font-size: .72rem;
+        }
+
+        // العناوين تلف على سطرين لو ضاقت (بالكلمة، من غير تكسير حروف)
+        thead>tr>th,
+        thead>tr>th .sapMColumnHeaderContent,
+        thead>tr>th .sapMText,
+        thead>tr>th .sapMLabel {
+            white-space: normal !important;
+            overflow-wrap: normal !important;
+            word-break: normal !important;
+            font-size: .74rem !important;
+            line-height: 1.2;
+        }
+
+        // الخلايا برضه بالكلمة
+        tbody>tr>td .sapMText:not(.aamlWrap),
+        tbody>tr>td .sapMObjectIdentifierText {
+            white-space: normal !important;
+            overflow-wrap: normal !important;
+            word-break: normal !important;
+            font-size: .74rem !important;
+        }
+
+        tbody>tr>td .sapMText.aamlMsg {
+            overflow-wrap: break-word !important;
+        }
+
+        th.sapMListTblSelCol,
+        td.sapMListTblSelCol {
+            width: 2rem !important;
+            padding: 0 !important;
+        }
+
+        .aamlStatus.aamlStatus.sapMObjStatus {
+            width: $pill-w-fit !important;
+            min-width: $pill-w-fit !important;
+            padding: .2rem .25rem !important;
+            font-size: .7rem;
+        }
+    }
+}
+
+
+// ============================================================
+// 20. تعديلات الجداول (بعد القسم 19)
+//     1) إخفاء العمود الزيادة بعد آخر عمود (عمود الـ navigation بتاع UI5) والـ border بتاعه
+//     2) محاذاة: العنوان والمحتوى من البداية، وعمود الـ Status (العنوان + الـ pill) في النص
+//     3) كل الـ pills بنفس عرض NeedsCorrection
+//     4) Case Consumption: الجدول كله ظاهر بدون scroll سواء الـ aside مفتوح أو مقفول
+// ============================================================
+$status-widest: "NeedsCorrection"; // أطول نص status: كل الـ pills بتاخد عرضه
+$cell-align: left; // محاذاة العنوان والمحتوى (لو عايزهم في النص: center)
+
+.app-page {
+
+    // ---------- 1) العمود الزيادة في آخر الجدول ----------
+    // UI5 بيضيف عمود narrow في الآخر للصفوف القابلة للضغط (Active)، وده اللي كان بيعمل border زيادة
+    .aamlTable.aamlTable.aamlTable.aamlTable {
+
+        th.sapMListTblNavCol,
+        td.sapMListTblNavCol,
+        th.sapMListTblNavCell,
+        td.sapMListTblNavCell {
+            display: none !important;
+            width: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+        }
+
+        // آخر عمود حقيقي (اللي قبل العمود المخفي) من غير border يمين
+        thead>tr>th:has(+ .sapMListTblNavCol),
+        thead>tr>th:has(+ .sapMListTblNavCell),
+        tbody>tr>td:has(+ .sapMListTblNavCol),
+        tbody>tr>td:has(+ .sapMListTblNavCell) {
+            border-right: 0 !important;
+        }
+
+        // ---------- 2) المحاذاة ----------
+        // الكل (العنوان + المحتوى) من البداية، ما عدا خانة الـ checkbox
+        thead>tr>th:not(.sapMListTblSelCol),
+        tbody>tr>td:not(.sapMListTblSelCol) {
+            text-align: $cell-align !important;
+        }
+
+        thead .sapMColumnHeaderContent,
+        thead .sapMText,
+        thead .sapMLabel,
+        tbody .sapMText,
+        tbody .sapMObjectIdentifier,
+        tbody .sapMObjectIdentifierTitle,
+        tbody .sapMObjectIdentifierText,
+        tbody .sapMText.aamlMsg {
+            text-align: $cell-align !important;
+        }
+
+        .aamlQtyInput {
+            margin: 0 !important;
+        }
+
+        // عمود الـ Status: الخلايا في النص
+        tbody>tr>td:has(.aamlStatus) {
+            text-align: center !important;
+        }
+
+        // ... والعنوان كمان في النص (بنحدد العمود بالترتيب: أي عمود فيه pill)
+        @for $i from 1 through 24 {
+            &:has(tbody>tr>td:nth-child(#{$i}) .aamlStatus) thead>tr>th:nth-child(#{$i}) {
+
+                &,
+                .sapMColumnHeaderContent,
+                .sapMText,
+                .sapMLabel {
+                    text-align: center !important;
+                }
+            }
+        }
+    }
+
+    // ---------- 3) كل الـ pills بنفس عرض NeedsCorrection ----------
+    // نص مخفي (NeedsCorrection) بيتحط في نفس خلية الـ grid مع نص الـ pill،
+    // فالعرض = أعرض واحد فيهم بنفس الخط بالظبط، والنص الحقيقي متوسّط.
+    .aamlStatus.aamlStatus.aamlStatus.sapMObjStatus {
+        display: inline-grid !important;
+        grid-template-columns: auto;
+        align-items: center;
+        justify-items: center;
+        width: auto !important;
+        min-width: 0 !important;
+
+        >* {
+            grid-area: 1 / 1;
+            justify-self: center;
+            text-align: center !important;
+        }
+
+        &::after {
+            content: $status-widest;
+            grid-area: 1 / 1;
+            visibility: hidden;
+            height: 0;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+    }
+
+    // ---------- 4) Case Consumption: الجدول كله ظاهر من غير scroll ----------
+    // الحل: عرض الأعمدة بيتحدد بالمحتوى (table-layout: auto) بدل النسب الثابتة،
+    // العناوين بتلف على سطرين لو لزم (من غير ما الكلمة نفسها تتكسر)، ومفيش min-width.
+    .aamlSection.aamlSectionFit.aamlSectionFit {
+        overflow-x: auto; // احتياطي بس: مش هيظهر إلا لو الشاشة أضيق من الحد الأدنى فعلًا
+        overflow-y: hidden;
+    }
+
+    .aamlTable.aamlTableFit.aamlTableFit.aamlTableFit {
+
+        &,
+        &.sapMList {
+            overflow: visible !important;
+        }
+
+        table,
+        .sapMListTbl {
+            table-layout: auto !important;
+            width: 100% !important;
+            min-width: 0 !important;
+        }
+
+        // نلغي النسب الثابتة اللي جاية من الـ View
+        thead>tr>th:not(.sapMListTblSelCol):not(.sapMListTblNavCol) {
+            width: auto !important;
+        }
+
+        // الكلمة الواحدة ما تتكسرش (ده اللي بيحدد أقل عرض للعمود)
+        .sapMText,
+        .sapMLabel,
+        .sapMObjectIdentifierText,
+        .sapMColumnHeaderContent {
+            overflow-wrap: normal !important;
+            word-break: normal !important;
+        }
+
+        // العناوين تلف بدل ما تتقص
+        thead .sapMListTblHeaderCell,
+        thead .sapMListTblHeaderCell .sapMText,
+        thead .sapMListTblHeaderCell .sapMLabel,
+        thead .sapMListTblHeaderCell .sapMColumnHeaderContent {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            line-height: 1.25;
+        }
+    }
+}
+
+
+// ============================================================
+// 21. تعديلات (بعد القسم 20)
+//     1) الـ navbar والـ footer بلون واحد (لون الشمال الغامق) من غير تدريج
+//     2) إزالة الخط الزيادة في الـ head بعد آخر عمود
+//     3) Case Consumption: كل عمود بعرض محتواه على سطر واحد، والـ Message ياخد الباقي بس
+// ============================================================
+
+// ---------- 1) navbar + footer: لون ثابت ----------
+.sapTntToolPage .sapTntToolHeader.aamlHeader.aamlHeader {
+    background: $primary-dark !important;
+    background-image: none !important;
+}
+
+.sapMTB.aamlFooter.aamlFooter {
+    background: $primary-dark !important;
+    background-image: none !important;
+}
+
+// رأس الجداول بنفس لون الـ navbar الجديد
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable {
+
+    thead>tr>th,
+    th.sapMListTblHeaderCell,
+    .sapMListTblHeaderCell {
+        background: $primary-dark !important;
+        background-image: none !important;
+    }
+}
+
+// ---------- 2) الخط الزيادة في الـ head ----------
+// لو في th زيادة في الآخر من غير أي نص (عمود الـ navigation) نخفيه، ونشيل الـ border من اللي قبله
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable {
+
+    thead>tr>th:last-child:not(:has(.sapMText)):not(:has(.sapMLabel)):not(:has(.sapMColumnHeaderContent)):not(.sapMListTblSelCol),
+    thead>tr>th:empty:last-child {
+        display: none !important;
+        width: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+
+    thead>tr>th:has(+ th:last-child:not(:has(.sapMText)):not(:has(.sapMLabel)):not(:has(.sapMColumnHeaderContent))),
+    thead>tr>th:has(+ th:empty:last-child),
+    thead>tr>th:last-child {
+        border-right: 0 !important;
+        box-shadow: none !important;
+    }
+
+    thead>tr>th::before,
+    thead>tr>th::after {
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+}
+
+// ---------- 3) Case Consumption: عرض كل عمود على قد محتواه ----------
+$fit-font: .75rem;
+
+.app-page .aamlTable.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit {
+
+    // كل الأعمدة (ما عدا الـ Message) على سطر واحد: العناوين والمحتوى
+    thead>tr>th,
+    thead>tr>th *,
+    tbody>tr>td:not(:has(.aamlMsg)),
+    tbody>tr>td:not(:has(.aamlMsg)) * {
+        white-space: nowrap !important;
+    }
+
+    thead .sapMListTblHeaderCell,
+    thead .sapMListTblHeaderCell .sapMText,
+    thead .sapMListTblHeaderCell .sapMLabel {
+        font-size: $fit-font !important;
+    }
+
+    tbody .sapMListTblCell .sapMText:not(.aamlMsg),
+    tbody .sapMObjectIdentifierText {
+        font-size: $fit-font;
+    }
+
+    // كل الأعمدة تنكمش على قد محتواها (1% = أقل عرض ممكن بدون كسر السطر)
+    thead>tr>th:not(.sapMListTblSelCol):not(.sapMListTblNavCol) {
+        width: 1% !important;
+    }
+
+    // الـ Message بس هو اللي ياخد المساحة الباقية (وبيلف لو المساحة ضيقة)
+    @for $i from 1 through 24 {
+        &:has(tbody>tr>td:nth-child(#{$i}) .aamlMsg) thead>tr>th:nth-child(#{$i}) {
+            width: auto !important;
+        }
+    }
+
+    thead>tr>th:has(+ .sapMListTblNavCol) {
+        width: auto !important;
+    }
+
+    tbody .sapMText.aamlWrap.aamlMsg {
+        min-width: 9rem !important;
+        font-size: $fit-font;
+    }
+}
+
+// ============================================================
+// 22. إصلاحات الجداول (ضيفه في آخر style.scss بعد القسم 21)
+//     - العمود الفاضي (dummy) بيتشال من الهيدر والصفوف مع بعض، فالجدول ياخد عرض الكارت كله
+//     - رأس الجداول يرجع للون القديم ($primary) والـ navbar/footer زي ما هم
+//     - Case Consumption: كل الأعمدة على قد محتواها (العناوين كمان على سطر واحد)،
+//       الـ Message ياخد الباقي بس، والخط بيصغر تلقائيًا لما الـ aside يتفتح (من غير scroll)
+// ============================================================
+
+// ---------- 1) كل الجداول ----------
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable {
+
+    // العمود الفاضي اللي UI5 بيزوده في آخر الجدول: لازم يتشال من الـ th والـ td مع بعض،
+    // لو اتشال من الهيدر بس بيظهر شريط أبيض في الهيدر (ده اللي حصل) والجدول مايملاش الكارت
+    th.sapMListTblDummyCell,
+    td.sapMListTblDummyCell,
+    th.sapMListTblNavCol,
+    td.sapMListTblNavCol,
+    th.sapMListTblNavCell,
+    td.sapMListTblNavCell,
+    thead>tr>th:last-child:not(:has(*)):not(.sapMListTblSelCol),
+    tbody>tr>td:last-child:not(:has(*)):not(.sapMListTblSelCol) {
+        display: none !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+
+    // آخر عمود حقيقي من غير خط يمين (الخط الزيادة بعد Message / SAP Document)
+    thead>tr>th:has(+ .sapMListTblDummyCell),
+    thead>tr>th:has(+ .sapMListTblNavCol),
+    thead>tr>th:has(+ th:last-child:not(:has(*))),
+    tbody>tr>td:has(+ .sapMListTblDummyCell),
+    tbody>tr>td:has(+ .sapMListTblNavCol),
+    tbody>tr>td:has(+ td:last-child:not(:has(*))) {
+        border-right: 0 !important;
+    }
+
+    // الجدول ياخد عرض الكارت كله (بدل الـ fixed layout اللي كان بيسيب فراغ)
+    table,
+    .sapMListTbl {
+        table-layout: auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    // رأس الجداول: اللون القديم
+    thead>tr>th,
+    th.sapMListTblHeaderCell,
+    .sapMListTblHeaderCell {
+        background: $primary !important;
+        background-image: none !important;
+    }
+}
+
+// ---------- 2) Case Consumption ----------
+// الكارت بيبقى "container" عشان الخط يتحسب من عرضه هو (aside مفتوح = أضيق = خط أصغر)
+.app-page .aamlSection.aamlSectionFit.aamlSectionFit.aamlSectionFit {
+    container-type: inline-size;
+    width: 100%;
+    box-sizing: border-box;
+    // احتياطي بس: مش المفروض يظهر. أحسن من إن الجدول يتقص
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+}
+
+.app-page .aamlTable.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit {
+
+    &,
+    &.sapMList {
+        overflow: visible !important;
+    }
+
+    // ---- الخط: .75rem لما الكارت واسع، وبيصغر لحد .62rem لما يضيق (الـ aside مفتوح) ----
+    // لو الجدول لسه واسع على شاشتك: قلل الرقم .7cqw. لو الخط صغير: زوّده.
+    thead>tr>th,
+    tbody>tr>td {
+        font-size: .68rem !important;
+        font-size: clamp(.62rem, .7cqw, .75rem) !important;
+        padding: .4em .4em !important;
+    }
+
+    th.sapMListTblSelCol,
+    td.sapMListTblSelCol {
+        width: 2.4rem !important;
+        padding: 0 !important;
+    }
+
+    // كل اللي جوه الخلايا ياخد نفس حجم الخط
+    .sapMText,
+    .sapMLabel,
+    .sapMColumnHeaderContent,
+    .sapMObjectIdentifierTitle,
+    .sapMObjectIdentifierTitle .sapMLnk,
+    .sapMObjectIdentifierTitle .sapMText,
+    bdi {
+        font-size: inherit !important;
+    }
+
+    .sapMObjectIdentifierText,
+    .sapMObjectIdentifierText .sapMText {
+        font-size: .92em !important;
+    }
+
+    // ---- كل الأعمدة على سطر واحد: العناوين والمحتوى (ما عدا الـ Message) ----
+    thead>tr>th,
+    thead>tr>th *,
+    thead .sapMListTblHeaderCell .sapMText,
+    thead .sapMListTblHeaderCell .sapMLabel,
+    thead .sapMListTblHeaderCell .sapMColumnHeaderContent,
+    tbody>tr>td:not(:has(.aamlMsg)),
+    tbody>tr>td:not(:has(.aamlMsg)) * {
+        white-space: nowrap !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
+    }
+
+    thead>tr>th,
+    thead>tr>th * {
+        overflow: visible !important;
+        text-overflow: clip !important;
+    }
+
+    // ---- العرض: كل عمود على قد محتواه، والـ Message بس ياخد الباقي ----
+    thead>tr>th:not(.sapMListTblSelCol):not(.sapMListTblDummyCell):not(.sapMListTblNavCol) {
+        width: 1% !important;
+    }
+
+    @for $i from 1 through 24 {
+        &:has(tbody>tr>td:nth-child(#{$i}) .aamlMsg) thead>tr>th:nth-child(#{$i}) {
+            width: auto !important;
+        }
+    }
+
+    thead>tr>th:has(+ .sapMListTblDummyCell),
+    thead>tr>th:has(+ .sapMListTblNavCol) {
+        width: auto !important;
+    }
+
+    // الـ Message: بيلف بين الكلمات لو المساحة ضيقة (ومن غير ما يضغط باقي الأعمدة)
+    tbody>tr>td:has(.aamlMsg) {
+        min-width: 7em;
+    }
+
+    tbody .sapMText.aamlWrap.aamlMsg {
+        white-space: normal !important;
+        min-width: 7em !important;
+        max-width: 100%;
+        overflow-wrap: break-word !important;
+        word-break: normal !important;
+        line-height: 1.3;
+    }
+
+    // ---- الـ pill: بعرض NeedsCorrection بالظبط (نص مخفي) ومتناسب مع الخط ----
+    .aamlStatus.aamlStatus.aamlStatus.sapMObjStatus {
+        width: auto !important;
+        min-width: 0 !important;
+        padding: .2em .6em !important;
+        font-size: .95em !important;
+    }
+}
+
+// ============================================================
+// 23. Case Consumption: حجم الخط (ضيفه في آخر style.scss بعد القسم 22)
+//     التقسيمة زي ما هي، بس الخط بقى أقرب لحجم باقي الجداول (جسم .875rem / عناوين .8rem)
+//     وبيصغر تلقائيًا بس لما الكارت يضيق (الـ aside مفتوح) عشان الجدول يفضل كامل من غير scroll.
+// ============================================================
+$fit-cqw: .76; // أهم رقم: زوّده = خط أكبر (ممكن يظهر scroll لو زوّدته أوي)، قلله = خط أصغر
+$fit-max: .875rem; // أقصى حجم للخط (نفس باقي الجداول)
+$fit-min: .62rem; // أقل حجم للخط (لما الـ aside يتفتح)
+
+.app-page .aamlTable.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit {
+
+    // المحتوى
+    tbody>tr>td {
+        font-size: .72rem !important; // احتياطي لو المتصفح مادعمش cqw
+        font-size: clamp(#{$fit-min}, #{$fit-cqw}cqw, #{$fit-max}) !important;
+    }
+
+    // العناوين: أصغر شوية من المحتوى (زي باقي الجداول .8 مقابل .875)
+    thead>tr>th {
+        font-size: .66rem !important;
+        font-size: clamp(#{$fit-min * .914}, #{$fit-cqw * .914}cqw, #{$fit-max * .914}) !important;
+    }
+
+    // الـ pill بنفس نسبة باقي الجداول (.75rem مقابل .875rem)
+    .aamlStatus.aamlStatus.aamlStatus.sapMObjStatus {
+        font-size: .86em !important;
+    }
+}
+
+// ============================================================
+// 24. تعديلات (ضيفه في آخر style.scss بعد القسم 23)
+//     1) حالة "مفيش data": الأعمدة موزعة بالتساوي، العناوين متوسّطة، ورسالة الـ no-data في النص
+//     2) Material (Case Consumption): مسافة أقل بين الكود والوصف
+//     3) Case Consumption: مساحة الـ Message أصغر شوية والباقي يتوزع على باقي الأعمدة
+//     4) Shared Nursing: عمود Remove وعمود Enter Quantity في النص
+// ============================================================
+$fit-pad: .6em; // المسافة الجانبية جوه خلايا Case Consumption: زوّدها = Message أضيق، قلّلها = Message أوسع
+
+// ---------- 1) مفيش data ----------
+// الكلاسات دي بتاعت UI5: الصف sapMListNoData والخلية sapMListNoDataText
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(.sapMListNoData) {
+
+    // أعمدة بعرض متساوي (fixed layout) بدل ما كلها تتزنق في اليمين
+    table,
+    .sapMListTbl {
+        table-layout: fixed !important;
+    }
+
+    thead>tr>th:not(.sapMListTblSelCol) {
+        width: auto !important;
+        text-align: center !important;
+
+        *,
+        .sapMColumnHeaderContent,
+        .sapMText,
+        .sapMLabel {
+            text-align: center !important;
+        }
+    }
+
+    th.sapMListTblSelCol {
+        width: 2.4rem !important;
+    }
+
+    // رسالة الـ no-data: في النص وبحجم مقروء
+    tr.sapMListNoData>td,
+    td.sapMListNoDataText {
+        display: table-cell !important; // عشان قاعدة إخفاء العمود الفاضي (القسم 22) ما تخفيش الرسالة
+        width: auto !important;
+        padding: 1rem !important;
+        border-right: 0 !important;
+        text-align: center !important;
+        white-space: normal !important;
+        font-size: .875rem !important;
+        color: #6b7280 !important;
+    }
+}
+
+// ---------- 2) Material: مسافة أقل بين الكود والوصف ----------
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable {
+
+    .sapMObjectIdentifier {
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        gap: .1em;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.2 !important;
+    }
+
+    .sapMObjectIdentifierTopLine,
+    .sapMObjectIdentifierTitle,
+    .sapMObjectIdentifierTitle .sapMLnk,
+    .sapMObjectIdentifierTitle .sapMText,
+    .sapMObjectIdentifierText,
+    .sapMObjectIdentifierText .sapMText {
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: 0 !important;
+        height: auto !important;
+        line-height: 1.2 !important;
+    }
+}
+
+// ---------- 3) Case Consumption: مساحة أصغر للـ Message ----------
+.app-page .aamlTable.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit {
+
+    thead>tr>th,
+    tbody>tr>td {
+        padding-inline: $fit-pad !important;
+    }
+}
+
+// ---------- 4) Shared Nursing: Remove + Enter Quantity في النص ----------
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable {
+
+    tbody>tr>td:has(.aamlDeleteBtn),
+    tbody>tr>td:has(.aamlQtyInput) {
+        text-align: center !important;
+    }
+
+    .aamlQtyInput {
+        margin-inline: auto !important;
+    }
+
+    // عناوين الأعمدة دي كمان في النص (بنحدد العمود بالترتيب)
+    @for $i from 1 through 24 {
+
+        &:has(tbody>tr>td:nth-child(#{$i}) .aamlDeleteBtn) thead>tr>th:nth-child(#{$i}),
+        &:has(tbody>tr>td:nth-child(#{$i}) .aamlQtyInput) thead>tr>th:nth-child(#{$i}) {
+
+            &,
+            .sapMColumnHeaderContent,
+            .sapMText,
+            .sapMLabel {
+                text-align: center !important;
+            }
+        }
+    }
+}
+
+// ============================================================
+// 25. تعديلات (ضيفه في آخر style.scss بعد القسم 24)
+//     1) رجوع التدريج في الـ navbar والـ footer
+//     2) Case Consumption: رسالة "Choose From and To dates..." في منتصف الجدول والفراغ اللي في البداية يتشال
+//     3) Material: مسافة أقل بين الكود والوصف
+// ============================================================
+$mat-gap: .1em; // المسافة بين كود الـ Material ووصفه (صغّرها أو كبّرها)
+
+// ---------- 1) التدريج ----------
+.sapTntToolPage .sapTntToolHeader.aamlHeader.aamlHeader.aamlHeader {
+    background: linear-gradient(135deg, $primary-dark 0%, $primary 55%, $primary-light 100%) !important;
+}
+
+.sapMTB.aamlFooter.aamlFooter.aamlFooter {
+    background: linear-gradient(135deg, $primary-dark, $primary) !important;
+}
+
+// ---------- 2) مفيش data ----------
+// القسم 24 كان بيدور على class اسمه sapMListNoData وواضح إنه مش موجود عندك،
+// فهنا الجدول الفاضي بيتعرف من الخلية اللي عليها colspan (خلية الرسالة بتاخد عرض الجدول كله)
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody>tr>td[colspan], .sapMListNoData) {
+
+    // أعمدة بعرض متساوي بدل ما تتزنق في اليمين ويفضل فراغ كبير في البداية
+    table,
+    .sapMListTbl {
+        table-layout: fixed !important;
+    }
+
+    thead>tr>th:not(.sapMListTblSelCol) {
+        width: auto !important;
+        text-align: center !important;
+
+        *,
+        .sapMColumnHeaderContent,
+        .sapMText,
+        .sapMLabel {
+            text-align: center !important;
+        }
+    }
+
+    th.sapMListTblSelCol {
+        width: 2.4rem !important;
+    }
+
+    // الرسالة: في المنتصف وبحجم مقروء، من غير خط جانبي
+    tbody>tr>td[colspan] {
+        display: table-cell !important; // عشان قاعدة إخفاء العمود الفاضي (القسم 22) ما تخفيهاش
+        width: auto !important;
+        padding: 1.25rem 1rem !important;
+        border: 0 !important;
+        text-align: center !important;
+        white-space: normal !important;
+        font-size: .875rem !important;
+        color: #6b7280 !important;
+
+        * {
+            text-align: center !important;
+            font-size: inherit !important;
+            white-space: normal !important;
+        }
+    }
+}
+
+// احتياطي: حتى لو الجدول مش اتعرف إنه فاضي، آخر عمود حقيقي (Message) ياخد المساحة الباقية
+// وباقي الأعمدة على قد محتواها، فمفيش فراغ كبير في أول الجدول
+.app-page .aamlTable.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit {
+
+    thead>tr>th:has(+ th:last-child:not(:has(*))),
+    thead>tr>th:last-child:has(*) {
+        width: auto !important;
+    }
+}
+
+// ---------- 3) Material: مسافة أقل بين الكود والوصف ----------
+// بنصفّر أي هامش / padding / ارتفاع أدنى / line-height جوه خلية الـ Material (من غير ما نعتمد على أسماء classes محددة)
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable {
+
+    tbody>tr>td:has(.sapMObjectIdentifier) {
+        line-height: 1.15 !important;
+
+        * {
+            margin-block: 0 !important;
+            padding-block: 0 !important;
+            min-height: 0 !important;
+            height: auto !important;
+            line-height: 1.15 !important;
+        }
+
+        .sapMObjectIdentifier {
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: $mat-gap;
+        }
+    }
+}
+
+// ============================================================
+// 26. الجدول الفاضي: شيل العمود الزيادة في أول الجدول (ضيفه في آخر style.scss بعد القسم 25)
+//     ده عمود الـ highlight بتاع UI5 (فاضي وبيكون ضيق جدًا)، وفي القسم 25 اتوزع عليه عرض متساوي مع الأعمدة.
+// ============================================================
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody>tr>td[colspan], .sapMListNoData) {
+
+    // أول عمود فاضي (من غير أي محتوى وغير خانة الـ checkbox) = عمود الـ highlight: ضيق جدًا
+    thead>tr>th.sapMListTblHighlightCol,
+    thead>tr>th:first-child:not(:has(*)):not(.sapMListTblSelCol) {
+        width: .5rem !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+
+    // الخلية الفاضية اللي جنب رسالة الـ no-data في الصف
+    tbody>tr>td.sapMListTblHighlightCell,
+    tbody>tr:has(>td[colspan])>td:not([colspan]) {
+        width: .5rem !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+    }
+}
+
+// ============================================================
+// 27. الجدول الفاضي: إخفاء العمود الزيادة في الأول نهائيًا (ضيفه في آخر style.scss بعد القسم 26)
+//     في القسم 26 صغّرته لـ .5rem بس لسه كان ظاهر كشريط أزرق قبل عمود الـ checkbox، فهنا بيتشال خالص.
+//     بيتشال من الهيدر ومن صف الرسالة مع بعض، فعدد الأعمدة بيفضل متطابق.
+// ============================================================
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody>tr>td[colspan], .sapMListNoData) {
+
+    thead>tr>th.sapMListTblHighlightCol,
+    thead>tr>th:first-child:not(:has(*)):not(.sapMListTblSelCol),
+    tbody>tr>td.sapMListTblHighlightCell,
+    tbody>tr:has(>td[colspan])>td:not([colspan]) {
+        display: none !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+}
+
+// ============================================================
+// 28. Case Consumption: خط أكبر بدون scroll (ضيفه في آخر style.scss بعد القسم 27)
+//     - المسافة الجانبية جوه الخلايا اتقللت (.6em -> .3em) والمساحة دي راحت للنص
+//     - الخط بيتحسب من عرض الكارت: الـ aside مقفول أكبر، ولما يتفتح بيصغر شوية عشان الجدول يفضل كامل
+// ============================================================
+$fit-cqw: .88; // أهم رقم: زوّده = خط أكبر (لو ظهر scroll قلله لـ .82 أو .85)، قلله = خط أصغر
+$fit-max: .875rem; // أقصى حجم للخط (نفس باقي الجداول)
+$fit-min: .62rem; // أقل حجم للخط
+$fit-pad: .3em; // المسافة الجانبية جوه الخلايا
+
+.app-page .aamlTable.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit {
+
+    tbody>tr>td {
+        font-size: .72rem !important; // احتياطي لو المتصفح مادعمش cqw
+        font-size: clamp(#{$fit-min}, #{$fit-cqw}cqw, #{$fit-max}) !important;
+    }
+
+    thead>tr>th {
+        font-size: .66rem !important;
+        font-size: clamp(#{$fit-min * .914}, #{$fit-cqw * .914}cqw, #{$fit-max * .914}) !important;
+    }
+
+    thead>tr>th,
+    tbody>tr>td {
+        padding-inline: $fit-pad !important;
+    }
+}
+
+// ============================================================
+// 29. Material: تقليل المسافة بين الكود والوصف (ضيفه في آخر style.scss بعد القسم 28)
+//     القسم 25 صفّر الهوامش والـ padding والارتفاعات، بس فضل في فراغ حوالي سطر بين الكود والوصف
+//     (مصدره عنصر داخلي في الـ ObjectIdentifier مش باين من برا)، فهنا الوصف بيتسحب لفوق بهامش سالب.
+// ============================================================
+$mat-pull: .9em; // كل ما تزوده المسافة تقل أكتر (لو الوصف لزق في الكود قلله، لو لسه بعيد زوّده لـ 1.2em)
+
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody>tr>td:has(.sapMObjectIdentifier) {
+
+    .sapMObjectIdentifierText {
+        margin-top: calc(-1 * #{$mat-pull}) !important;
+    }
+}
+
+// ============================================================
+// 30. تقوية الألوان + رأس الجداول أفتح (ضيفه في آخر style.scss بعد القسم 29)
+// ============================================================
+
+// ---------- 1) ألوان أوضح ----------
+$text-strong: #1f2937;
+$label-strong: #374151;
+$line-strong: #b9c4d3;      // حدود الكروت والخانات
+$tbl-line-strong: #c3cfde;  // خطوط الجداول
+
+html {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+.app-page {
+    .aamlFilterField .sapMLabel {
+        color: $label-strong !important;
+        font-size: .72rem;
+    }
+
+    .aamlFilterField .sapMInputBaseInner,
+    .aamlFilterField .sapMSltLabel,
+    .aamlFilterField .sapMSFI {
+        color: $text-strong !important;
+        font-weight: 500;
+    }
+
+    .aamlFilterField .sapMInputBaseInner::placeholder {
+        color: #6b7280 !important;
+    }
+
+    .aamlFilterField .sapMInputBaseContentWrapper,
+    .aamlFilterField .sapMSlt,
+    .aamlFilterField .sapMSFF {
+        border-color: $line-strong !important;
+    }
+
+    .aamlSection {
+        border-color: $line-strong;
+    }
+
+    .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody>tr>td {
+        border-bottom-color: $tbl-line-strong !important;
+        border-right-color: $tbl-line-strong !important;
+        color: $text-strong;
+    }
+}
+
+// ---------- 2) رأس الجداول: نفس لون الأزرار + ظل ناعم ----------
+// لون الأزرار الأساسية (Go / Add Material) هو $primary، ولونها وقت الـ hover والضغط $primary-dark.
+$tbl-head-bg2: $primary;
+$tbl-head-text2: $text-on-bar;
+$tbl-head-line2: rgba(255, 255, 255, .22); // فواصل الأعمدة جوه الرأس
+// الظل الناعم تحت الرأس (offset-y blur spread لون): زوّد .3 = ظل أغمق، وزوّد الـ 8px = ظل أنعم وأطول
+$tbl-head-shadow: inset 0 8px 8px -8px rgba($primary-dark, .3);
+
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable {
+
+    thead>tr>th,
+    th.sapMListTblHeaderCell,
+    .sapMListTblHeaderCell {
+        background: $tbl-head-bg2 !important;
+        background-image: none !important;
+        // شيلنا الخط التقيل (2px) اللي تحت الرأس وكان شكله زي الظل الحاد، والظل الناعم بدله تحت
+        border-bottom-width: 0 !important;
+        // بنغيّر اللون بس (من غير الـ width) عشان قواعد إخفاء الخط الزيادة تفضل شغالة
+        border-right-color: $tbl-head-line2 !important;
+        box-shadow: none !important;
+    }
+
+    // الظل الناعم: inset على أول صف جوه الجدول (من تحت الرأس مباشرة)، فمبيتغطاش بخلفية الصفوف
+    thead+tbody>tr:first-child>td {
+        box-shadow: $tbl-head-shadow !important;
+    }
+
+    .sapMListTblHeaderCell,
+    .sapMListTblHeaderCell .sapMColumnHeaderContent,
+    .sapMListTblHeaderCell .sapMText,
+    .sapMListTblHeaderCell .sapMLabel,
+    .sapMListTblHeaderCell bdi,
+    .sapMListTblHeaderCell span {
+        color: $tbl-head-text2 !important;
+    }
+}
+
+// ============================================================
+// 31. إخفاء العمود الضيق اللي في أول كل الجداول (ضيفه في آخر style.scss بعد القسم 30)
+//     ده عمود الـ highlight بتاع UI5 (قبل عمود الـ checkbox). القسم 27 كان بيشيله في حالة "مفيش data" بس،
+//     فهنا بيتشال في كل الحالات من الهيدر ومن الصفوف مع بعض، فعدد الأعمدة بيفضل متطابق.
+// ============================================================
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable {
+
+    thead>tr>th.sapMListTblHighlightCol,
+    tbody>tr>td.sapMListTblHighlightCell,
+    // احتياطي لو UI5 غيّر أسماء الـ classes: أول خانة فاضية أو فيها شريط الـ highlight بس (من غير خانة الـ checkbox)
+    thead>tr>th:first-child:not(:has(*)):not(.sapMListTblSelCol),
+    tbody>tr>td:first-child:not(:has(*)):not(.sapMListTblSelCol),
+    tbody>tr>td:first-child:has(.sapMLIBHighlight):not(.sapMListTblSelCol) {
+        display: none !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+}
+
+// ============================================================
+// 32. زرار Clear المعطّل (مفيش داتا في الخانات)
+//     باهت وثابت: من غير أي hover / focus / ضغط، وأثر الضغط ما بيفضلش بعد ما الزرار يتعطّل.
+//     ضيفه في آخر style.scss (بعد القسم 31).
+// ============================================================
+.app-page {
+
+    .aamlFilterActions .aamlBtn.aamlBtnClear.sapMBtn.sapMBtnDisabled {
+        opacity: .45 !important;
+        pointer-events: none !important;
+        cursor: default !important;
+
+        &,
+        &:hover,
+        &:focus,
+        &:active {
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+        .sapMBtnInner,
+        .sapMBtnInner:hover,
+        .sapMBtnInner:focus,
+        .sapMBtnInner:active,
+        .sapMBtnInner.sapMBtnDisabled,
+        .sapMBtnInner.sapMBtnHoverable:hover,
+        .sapMBtnInner.sapMBtnActive {
+            background: $bg-card !important;
+            border-color: rgba(#dc2626, .4) !important;
+            color: #b91c1c !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+        .sapMBtnContent,
+        .sapMBtnIcon {
+            color: #b91c1c !important;
+        }
+    }
+}
+
+// ============================================================
+// 33. Case Consumption: عرض ثابت لكل عمود (الشكل ما يتغيرش بعد Go / Clear)
+//     table-layout: fixed + نسب مئوية لكل عمود، فالتوزيع مبقاش بيعتمد على المحتوى.
+//     ضيفه في آخر style.scss (بعد القسم 32).
+// ============================================================
+@function aaml-col-sel($n) {
+    $s: "thead>tr>th.sapMListTblSelCol";
+
+    @for $k from 1 through $n {
+        $s: $s + " + th";
+    }
+
+    @return $s;
+}
+
+// ترتيب الأعمدة (بعد خانة الـ checkbox):
+// Case ID | Date | Hospital/Mod | Material | Class | Model | Actual mCi | Capacity |
+// Quantity | Plant/SLoc | Batch | Batch rule | Est. Waste | Status | Message
+$fit-cols: 3.6, 5.8, 6.1, 8.8, 5.2, 7.4, 4.6, 5.6, 9.3, 5.4, 5.2, 5.2, 4.7, 7.4, 13.7;
+
+.app-page .aamlTable.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit.aamlTableFit {
+
+    table,
+    .sapMListTbl {
+        table-layout: fixed !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    th.sapMListTblSelCol,
+    td.sapMListTblSelCol {
+        width: 2.4rem !important;
+    }
+
+    @for $i from 1 through list.length($fit-cols) {
+        #{aaml-col-sel($i)} {
+            width: list.nth($fit-cols, $i) * 1% !important;
+        }
+    }
+
+    // الـ Message بتلف جوه عمودها
+    tbody .sapMText.aamlWrap.aamlMsg {
+        min-width: 0 !important;
+    }
+}
+// ============================================================
+// 34. شاشة سجل المعاملات: كارت Create
+//     ضيفه في آخر style.scss (بعد القسم 33).
+// ============================================================
+.app-page {
+
+    .aamlFilterBar.aamlCreateBar {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-template-rows: auto;
+        padding-block: .75rem;
+
+        @media (max-width: 1100px) {
+            grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .aamlFilterActions .sapMLabel {
+            display: none;
+        }
+
+        .aamlFilterActions {
+            justify-self: start;
+        }
+    }
+}
+
+// ============================================================
+// 35. زرار Save في أعلى صفحة Case Consumption (يمين الصفحة)
+//     ضيفه في آخر style.scss (بعد القسم 34).
+// ============================================================
+.app-page {
+
+    .aamlPageHeader {
+        width: 100%;
+        align-items: flex-start;
+        gap: 1rem;
+
+        .aamlBtn.aamlBtnGo.sapMBtn {
+            flex: 0 0 auto;
+            box-sizing: border-box;
+            height: $field-h;
+            min-width: 6rem;
+            margin: 0;
+
+            .sapMBtnInner {
+                height: 100% !important;
+                min-width: 0 !important;
+                padding: 0 1rem !important;
+                border-radius: $radius;
+                font-weight: 600;
+                background: $primary !important;
+                border-color: $primary !important;
+                color: $text-on-bar !important;
+                box-shadow: none !important;
+            }
+
+            &:hover .sapMBtnInner,
+            &:active .sapMBtnInner,
+            &:focus .sapMBtnInner,
+            .sapMBtnInner.sapMBtnHoverable:hover,
+            .sapMBtnInner.sapMBtnActive {
+                background: $primary-dark !important;
+                border-color: $primary-dark !important;
+                color: $text-on-bar !important;
+                box-shadow: 0 3px 8px rgba($primary, .3) !important;
+            }
+
+            .sapMBtnContent,
+            .sapMBtnIcon {
+                color: $text-on-bar !important;
+            }
+        }
+    }
+}
+
+// ============================================================
+// 36. فلاتر سجل المعاملات (خانتين) + حالة زرار Back
+//     ضيفه في آخر style.scss (بعد القسم 35).
+// ============================================================
+.app-page {
+
+    // كارت الفلاتر بتاع سجل المعاملات: Transaction ID + Date + Go / Clear
+    .aamlFilterBar.aamlFilter2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+
+        @media (max-width: 700px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    // زرار Back: الـ focus بعد الضغط ما يغيّرش لونه؛ بس hover/ضغط فعلي يغمّقه
+    .aamlPageHeader .aamlBtn.aamlBtnGo.sapMBtn {
+
+        &:focus:not(:hover):not(:active) .sapMBtnInner,
+        .sapMBtnInner:focus:not(:hover):not(:active) {
+            background: $primary !important;
+            border-color: $primary !important;
+            color: $text-on-bar !important;
+            box-shadow: none !important;
+            outline: none !important;
+        }
+
+        .sapMBtnInner.sapMBtnActive:not(:hover) {
+            background: $primary !important;
+            border-color: $primary !important;
+            box-shadow: none !important;
+        }
+
+        &:hover .sapMBtnInner {
+            background: $primary-dark !important;
+            border-color: $primary-dark !important;
+            box-shadow: 0 3px 8px rgba($primary, .3) !important;
+        }
+
+        .sapMBtnFocusDomRef::after,
+        &.sapMBtnFocus::after {
+            display: none !important;
+        }
+    }
+}

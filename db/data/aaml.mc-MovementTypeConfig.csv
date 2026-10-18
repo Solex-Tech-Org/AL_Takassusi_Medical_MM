@@ -1,0 +1,5 @@
+Scenario,GoodsMovementType,GoodsMovementCode,Active
+Normal,DEMO-GI-N,DEMO-GMC,true
+NuclearConsumption,DEMO-GI-NC,DEMO-GMC,true
+NuclearWaste,DEMO-GI-NW,DEMO-GMC,true
+NursingShared,DEMO-GI-NS,DEMO-GMC,true

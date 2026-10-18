@@ -1,0 +1,139 @@
+{
+  "_version": "1.59.0",
+  "sap.app": {
+    "id": "aaml.material",
+    "type": "application",
+    "title": "{{appTitle}}",
+    "description": "{{appDescription}}",
+    "i18n": "i18n/i18n.properties",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/odata/v4/quality/MaterialConsumptionService/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "resources": {
+      "css": [
+        {
+          "uri": "css/style.css"
+        }
+      ]
+    },
+    "rootView": {
+      "viewName": "aaml.material.view.App",
+      "type": "XML",
+      "async": true,
+      "id": "app"
+    },
+    "dependencies": {
+      "minUI5Version": "1.121.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {}
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "aaml.material.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "settings": {
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true,
+          "groupId": "$auto"
+        }
+      }
+    },
+    "routing": {
+      "config": {
+        "routerClass": "sap.m.routing.Router",
+        "viewType": "XML",
+        "viewPath": "aaml.material.view",
+        "controlId": "appNavContainer",
+        "controlAggregation": "pages",
+        "transition": "slide",
+        "async": true
+      },
+      "routes": [
+        {
+          "pattern": "",
+          "name": "home",
+          "target": "caseSessions"
+        },
+        {
+          "pattern": "case",
+          "name": "caseSessions",
+          "target": "caseSessions"
+        },
+        {
+          "pattern": "case/new",
+          "name": "casePeriod",
+          "target": "casePeriod"
+        },
+        {
+          "pattern": "case/session/{id}",
+          "name": "caseConsumption",
+          "target": "caseConsumption"
+        },
+        {
+          "pattern": "shared",
+          "name": "sharedNursing",
+          "target": "sharedNursing"
+        },
+        {
+          "pattern": "report",
+          "name": "materialReport",
+          "target": "materialReport"
+        }
+      ],
+      "targets": {
+        "caseSessions": {
+          "viewName": "CaseSessions",
+          "viewId": "caseSessions"
+        },
+        "casePeriod": {
+          "viewName": "CasePeriod",
+          "viewId": "casePeriod"
+        },
+        "caseConsumption": {
+          "viewName": "CaseConsumption",
+          "viewId": "caseConsumption"
+        },
+        "sharedNursing": {
+          "viewName": "SharedNursing",
+          "viewId": "sharedNursing"
+        },
+        "materialReport": {
+          "viewName": "MaterialReport",
+          "viewId": "materialReport"
+        }
+      }
+    }
+  }
+}
