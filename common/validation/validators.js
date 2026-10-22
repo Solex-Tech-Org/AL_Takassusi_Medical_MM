@@ -45,9 +45,16 @@ const sharedItem = (item, master) => {
     if (master && item.BUOM && item.BUOM !== master.BaseUnit) out.push(issue('BUOM_MISMATCH', `Quantity must be entered in BUOM ${master.BaseUnit}`));
     return out;
 };
+/** Stock guard for Shared Nursing: no stock -> blocked; requested (total per material) > available -> blocked. */
+const sharedStock = (available, requested) => {
+    const avail = Number(available);
+    if (!(avail > 0)) return [issue('NO_STOCK', 'No available stock for this material (Available = 0)')];
+    if (Number(requested) > avail) return [issue('QTY_EXCEEDS_STOCK', `Quantity ${requested} exceeds the available stock ${avail}`)];
+    return [];
+};
 const msg = list => list.map(i => i.message).join('; ');
 
 module.exports = {
     waitingRow, classification, normalQuantity, nuclearActivity, liquidBatch, powderBatch,
-    movementType, location, costCenter, sharedMaterial, sharedItem, msg
+    movementType, location, costCenter, sharedMaterial, sharedItem, sharedStock, msg
 };

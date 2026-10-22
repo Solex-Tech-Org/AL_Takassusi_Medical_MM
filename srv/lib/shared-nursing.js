@@ -50,12 +50,16 @@ async function search({ term, hospital, modality }) {
   return searchLocal({ term: t, hospital, modality });
 }
 
-async function validate(input) {
+async function validate(input, { checkStock = true } = {}) {
   const loc = await derive(input.Hospital, input.Modality);
+  const s4 = getS4Api();
   const items = []; let ok = !loc.Message;
   const mv = await SELECT.one.from(E().MovementTypeConfig).where({ Scenario: 'NursingShared' });
   const mvIssues = V.movementType(mv, cfg().prohibitedMovementTypes);
   if (!input.PostingDate) ok = false;
+  // total requested per material: the same material on two lines must not exceed the stock together
+  const totals = {};
+  for (const it of input.Items || []) if (Number(it.Quantity) > 0) totals[it.Material] = (totals[it.Material] || 0) + Number(it.Quantity);
   for (const it of input.Items || []) {
     let master = await SELECT.one.from(E().MaterialMaster).where({ Material: it.Material });
     // Products selected from S/4 API may not exist in local MaterialMaster yet
@@ -63,11 +67,17 @@ async function validate(input) {
       master = { Material: it.Material, Description: null, BaseUnit: it.BUOM, MaterialType: 'Nursing', Active: true };
     }
     const issues = V.sharedItem(it, master);
+    // stock guard: Available = 0 or Quantity > Available -> blocked (only when material/qty are otherwise valid and plant/sloc were derived)
+    if (checkStock && !issues.length && loc.Plant) {
+      const available = await s4.getMaterialStock({ material: it.Material, plant: loc.Plant, storageLocation: loc.StorageLocation });
+      issues.push(...V.sharedStock(available, totals[it.Material]));
+    }
     if (issues.length) ok = false;
     items.push({ Material: it.Material, Status: issues.length ? 'Error' : 'Ready', Message: V.msg(issues) });
   }
   if (!(input.Items || []).length) ok = false;
-  const message = loc.Message || V.msg(mvIssues) || (!input.PostingDate ? 'Posting Date is required' : !(input.Items || []).length ? 'Add at least one material' : null);
+  const itemErrors = items.filter(i => i.Status === 'Error').map(i => `${i.Material}: ${i.Message}`).join('; ');
+  const message = loc.Message || V.msg(mvIssues) || (!input.PostingDate ? 'Posting Date is required' : !(input.Items || []).length ? 'Add at least one material' : itemErrors || null);
   return { ok: ok && !mvIssues.length, loc, mv, result: { Status: ok && !mvIssues.length ? 'Ready' : 'Blocked', Message: message, Items: items } };
 }
 const validateShared = async input => (await validate(input)).result;
@@ -75,12 +85,17 @@ const validateShared = async input => (await validate(input)).result;
 /** Create entry + post to the derived Hospital/Modality cost center. No Case ID, no Nuclear logic. */
 async function post(input) {
   const { SharedConsumptions, MaterialMaster } = E();
-  const v = await validate(input);
-  if (!v.ok) return v.result;
   const items = input.Items;
   const key = payload.idempotencyKey(['SHARED', input.ClientRequestId || JSON.stringify([input.PostingDate, input.Hospital, input.Modality, items])]);
   const dup = await SELECT.one.from(SharedConsumptions).where({ IdempotencyKey: key });
-  if (dup?.Status === 'Posted') return { Status: 'Posted', Message: 'Already posted - existing SAP result returned', SAPMaterialDocument: dup.SAPMaterialDocument, SAPMaterialDocumentYear: dup.SAPMaterialDocumentYear, Items: v.result.Items };
+  // retry of an already posted request: return the stored SAP result WITHOUT re-checking stock
+  // (the first posting already consumed it, so a stock check would wrongly block the retry)
+  if (dup?.Status === 'Posted') {
+    const v0 = await validate(input, { checkStock: false });
+    return { Status: 'Posted', Message: 'Already posted - existing SAP result returned', SAPMaterialDocument: dup.SAPMaterialDocument, SAPMaterialDocumentYear: dup.SAPMaterialDocumentYear, Items: v0.result.Items };
+  }
+  const v = await validate(input);                                     // includes the stock check
+  if (!v.ok) return v.result;
 
   const ID = dup?.ID || cds.utils.uuid();
   const head = { ID, PostingDate: input.PostingDate, Hospital: input.Hospital, Modality: input.Modality, ...v.loc, IdempotencyKey: key,

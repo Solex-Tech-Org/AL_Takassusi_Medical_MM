@@ -72,11 +72,43 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/m
                 // StatusCode = short status (shown as a pill), StatusMessage = details (shown in its own column)
                 // بنعمل array جديدة بدل push على نفس الـ array، عشان الـ model يلاحظ التغيير ويرسم كل الصفوف صح
                 if (!items.some(i => i.Material === mat.Material)) {
-                    vm.setProperty("/Items", [...items, { ...mat, Quantity: "", StatusCode: "", StatusMessage: "" }]);
+                    const noStock = mat.Available !== null && mat.Available !== undefined && !(Number(mat.Available) > 0);   // Available = 0: qty input is locked (see view)
+                    vm.setProperty("/Items", [...items, { ...mat, Quantity: "", StatusCode: noStock ? "Error" : "", StatusMessage: noStock ? this.getText("noStock") : "",
+                        QtyState: "None", QtyStateText: "" }]);
                 }
                 vm.setProperty("/Suggestions", []);
                 const search = this.byId("matSearch"); search.setValue("");
                 search.focus();                                    // الفوكس يرجع لخانة البحث، فزرار Add ما يفضلش "معلّق" بعد الضغط
+            },
+            /** null = OK, otherwise the error text. Empty/0 qty is not an error (it is simply not posted). Available = null (no Hospital/Modality yet) is left to the backend. */
+            _qtyError: function (item, qty) {
+                const q = Number(qty);
+                if (!(q > 0) || item.Available === null || item.Available === undefined) return null;
+                const avail = Number(item.Available);
+                if (!(avail > 0)) return this.getText("noStock");
+                if (q > avail) return this.getText("qtyExceedsStock", [avail]);
+                return null;
+            },
+            /** Live feedback while typing: red border + message under the field when qty > Available. */
+            onQtyChange: function (oEvent) {
+                const vm = this._vm(), path = oEvent.getSource().getBindingContext("view").getPath();
+                const err = this._qtyError(vm.getProperty(path), oEvent.getParameter("value"));
+                vm.setProperty(path + "/QtyState", err ? "Error" : "None");
+                vm.setProperty(path + "/QtyStateText", err || "");
+            },
+            /** After a successful post the stock changed: re-read Available so the same stock cannot be posted twice. */
+            _refreshAvailable: async function () {
+                const vm = this._vm(), h = vm.getProperty("/Hospital"), m = vm.getProperty("/Modality");
+                const items = vm.getProperty("/Items") || [];
+                const fresh = await Promise.all(items.map(async i => {
+                    try {
+                        const r = await this.callFunction("searchNursingMaterials", { term: i.Material, hospital: h, modality: m });
+                        const rows = Array.isArray(r) ? r : (r && r.value) || [];
+                        const f = rows.find(x => x.Material === i.Material);
+                        return f ? { ...i, Available: f.Available } : i;
+                    } catch (e) { return i; }
+                }));
+                vm.setProperty("/Items", fresh);
             },
             onRemove: function (oEvent) {
                 const vm = this._vm(); const idx = +oEvent.getSource().getBindingContext("view").getPath().split("/").pop();
@@ -87,6 +119,13 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/m
                 const vm = this._vm(); const d = vm.getData();
                 const items = d.Items.filter(i => Number(i.Quantity) > 0).map(i => ({ Material: i.Material, Description: i.Description, Quantity: Number(i.Quantity), BUOM: i.BUOM }));
                 if (!items.length) return MessageToast.show(this.getText("enterQtyFirst"));
+                // client-side guard (the backend re-checks anyway): Available = 0 or Quantity > Available -> do not post
+                const errs = d.Items.map(i => (Number(i.Quantity) > 0 ? this._qtyError(i, i.Quantity) : null));
+                if (errs.some(Boolean)) {
+                    vm.setProperty("/Items", d.Items.map((i, n) => errs[n]
+                        ? { ...i, StatusCode: "Error", StatusMessage: errs[n], QtyState: "Error", QtyStateText: errs[n] } : i));
+                    return MessageBox.error(this.getText("fixQtyFirst"));
+                }
                 vm.setProperty("/busy", true);
                 try {
                     const res = await this.callAction("postShared", { input: { PostingDate: d.PostingDate, Hospital: d.Hospital, Modality: d.Modality, ClientRequestId: d.ClientRequestId, Items: items } });
@@ -95,7 +134,7 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/m
                         const r = by[i.Material];
                         return r ? { ...i, StatusCode: r.Status || "", StatusMessage: r.Message || "" } : i;
                     }));
-                    if (res.Status === "Posted") { MessageBox.success(`SAP document ${res.SAPMaterialDocument}/${res.SAPMaterialDocumentYear}`); vm.setProperty("/ClientRequestId", crypto.randomUUID()); }
+                    if (res.Status === "Posted") { MessageBox.success(`SAP document ${res.SAPMaterialDocument}/${res.SAPMaterialDocumentYear}`); vm.setProperty("/ClientRequestId", crypto.randomUUID()); await this._refreshAvailable(); }
                     else MessageBox.warning(res.Message || res.Status);
                 } catch (e) { this.showError(e); } finally { vm.setProperty("/busy", false); }
             }
