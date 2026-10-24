@@ -1,5 +1,5 @@
 {
-  "name": "SD_AAML",
+  "name": "AL_Takassusi_Medical_MM",
   "version": "1.0.0",
   "dependencies": {
     "@cap-js/postgres": "^3",
@@ -13,15 +13,18 @@
     "sass": "^1.105.1"
   },
   "scripts": {
-    "start": "cds-serve --in-memory",
-    "watch": "cds-serve --in-memory"
+    "start": "cds-serve",
+    "watch": "cds-serve"
   },
   "private": true,
   "cds": {
     "requires": {
       "auth": "dummy",
       "destinations": true,
-      "html5-repo": true
+      "html5-repo": true,
+      "[production]": {
+        "auth": "xsuaa"
+      }
     },
     "aaml": {
       "productApi": {

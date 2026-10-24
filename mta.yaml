@@ -1,43 +1,111 @@
 _schema-version: 3.3.0
-ID: SD_AAML
+ID: AL_Takassusi_Medical_MM
 version: 1.0.0
 description: "A simple CAP project."
 parameters:
-  enable-parallel-deployments: true
+  enable-parallel-deployments: false
+  deploy_mode: html5-repo
 build-parameters:
   before-all:
     - builder: custom
       commands:
         - npm ci
         - npx cds build --production
+        - cp -r common gen/srv/common
+        - rm -rf .deploy/app-router/resources
+        - cp -r app .deploy/app-router/resources
 modules:
-  - name: SD_AAML-srv
+  - name: AL_Takassusi_Medical_MM-srv
     type: nodejs
     path: gen/srv
     parameters:
       instances: 1
+      memory: 512M
+      disk-quota: 1G
       buildpack: nodejs_buildpack
     build-parameters:
       builder: npm-ci
     requires:
-      - name: SD_AAML-postgres
+      - name: AL_Takassusi_Medical_MM-postgres
+      - name: AL_Takassusi_Medical_MM-auth
+      - name: AL_Takassusi_Medical_MM-destination
+    provides:
+      - name: srv-api # required by consumers of CAP services (e.g. approuter)
+        properties:
+          srv-url: ${default-url}
 
-  - name: SD_AAML-postgres-deployer
+  - name: AL_Takassusi_Medical_MM-postgres-deployer
     type: nodejs
     path: gen/pg
     parameters:
       buildpack: nodejs_buildpack
+      memory: 256M
       no-route: true
       no-start: true
       tasks:
         - name: deploy-to-postgresql
           command: npm start
     requires:
-      - name: SD_AAML-postgres
+      - name: AL_Takassusi_Medical_MM-postgres
+  - name: AL_Takassusi_Medical_MM
+    type: approuter.nodejs
+    path: .deploy/app-router
+    parameters:
+      keep-existing-routes: true
+      disk-quota: 512M
+      memory: 256M
+    requires:
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api # must be used in xs-app.json as well
+          url: ~{srv-url}
+          forwardAuthToken: true
+      - name: AL_Takassusi_Medical_MM-auth
+      - name: AL_Takassusi_Medical_MM-destination
+      - name: AL_Takassusi_Medical_MM-html5-runtime
+    provides:
+      - name: app-api
+        properties:
+          app-protocol: ${protocol}
+          app-uri: ${default-uri}
 
 resources:
-  - name: SD_AAML-postgres
+  - name: AL_Takassusi_Medical_MM-postgres
     type: org.cloudfoundry.managed-service
     parameters:
       service: postgresql-db
       service-plan: standard
+  - name: AL_Takassusi_Medical_MM-auth
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: AL_Takassusi_Medical_MM-${space}
+        tenant-mode: dedicated
+        oauth2-configuration:
+          credential-types:
+            - "binding-secret"
+            - "x509"
+          redirect-uris:
+            - https://*~{app-api/app-uri}/**
+    requires:
+      - name: app-api
+  - name: AL_Takassusi_Medical_MM-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+
+  - name: AL_Takassusi_Medical_MM-html5-repo-host
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-host
+  - name: AL_Takassusi_Medical_MM-html5-runtime
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: html5-apps-repo
+      service-plan: app-runtime
