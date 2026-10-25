@@ -2796,4 +2796,228 @@ html {
   display: none !important;
 }
 
+@keyframes aamlRowSelect {
+  0% {
+    background-color: rgba(11, 92, 171, 0.3);
+  }
+  100% {
+    background-color: rgba(11, 92, 171, 0.1);
+  }
+}
+@keyframes aamlBarIn {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable th.sapMListTblSelCol,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable td.sapMListTblSelCol {
+  width: 2.4rem !important;
+  min-width: 2.4rem !important;
+  max-width: 2.4rem !important;
+  padding: 0 !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  position: relative;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable th.sapMListTblSelCol .sapMCb,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable td.sapMListTblSelCol .sapMCb {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 2rem;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable .sapMCbBg {
+  margin: 0 !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable .sapMCb, .app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable .sapMCb:focus, .app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable .sapMCb:focus-within, .app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable .sapMCbBg {
+  outline: none !important;
+  box-shadow: none !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable .sapMCb::before, .app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable .sapMCb::after {
+  display: none !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td {
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected > td,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected:hover > td {
+  background-color: rgba(11, 92, 171, 0.1) !important;
+  animation: aamlRowSelect 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected > td.sapMListTblSelCol::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 4px;
+  background: #0b5cab;
+  animation: aamlBarIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected .sapMText {
+  color: #08417a !important;
+  font-weight: 600;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable table, .app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable .sapMListTbl {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr:last-child > td,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected > td,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected:hover > td {
+  border-bottom: 1px solid #d5deea !important;
+  border-right: 1px solid #d5deea !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td:last-child,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable thead > tr > th:last-child {
+  border-right: 0 !important;
+}
+
+.app-page .aamlSection.aamlSection {
+  overflow: visible !important;
+}
+
+.app-page .aamlTableScroll {
+  width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+
+.app-page .aamlCardFooter {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  width: 100% !important;
+  box-sizing: border-box;
+  background: #fbfcfe;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 -4px 10px -6px rgba(0, 0, 0, 0.18);
+}
+
+.app-page .aamlSection > .sapMTB.aamlTableToolbar {
+  width: 100% !important;
+  box-sizing: border-box;
+  position: sticky;
+  left: 0;
+}
+
+.app-page .aamlSection.aamlSection {
+  overflow: clip !important;
+  border: 1px solid #b9c4d3 !important;
+  border-radius: 6px !important;
+  background-clip: padding-box;
+}
+
+.app-page .aamlSection > .sapMTB.aamlTableToolbar:first-child {
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.app-page .aamlSection > .aamlFilterBar:last-child,
+.app-page .aamlSection > .aamlCardFooter:last-child {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.app-page .aamlSection.aamlSection:hover {
+  border-color: #2f80d6 !important;
+}
+
+@media (max-width: 1100px) {
+  .app-page .aamlFilterBar {
+    align-items: start !important;
+    row-gap: 0.75rem;
+  }
+  .app-page .aamlFilterBar .aamlFilterField {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch;
+    align-self: start;
+    min-width: 0;
+  }
+  .app-page .aamlFilterBar .aamlFilterField .sapMLabel {
+    display: block;
+    height: 1.1rem;
+    line-height: 1.1rem;
+    margin-bottom: 0.3rem !important;
+  }
+  .app-page .aamlFilterBar .aamlFilterField.aamlFilterActions {
+    grid-column: 1/-1;
+    justify-self: start;
+    align-self: start;
+  }
+  .app-page .aamlFilterBar .aamlFilterField.aamlFilterActions .sapMLabel {
+    display: none;
+  }
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected .sapMText,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected .sapMObjectIdentifierText {
+  font-weight: inherit !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected .sapMText {
+  color: #08417a !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected > td,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected:hover > td {
+  box-sizing: border-box;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td.sapMListTblSelCol::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 4px;
+  background: transparent;
+  pointer-events: none;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected > td.sapMListTblSelCol::before {
+  background: #0b5cab;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr.sapMLIBSelected > td {
+  animation: aamlRowSelect 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody > tr > td[colspan], .sapMListNoData) table,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody > tr > td[colspan], .sapMListNoData) .sapMListTbl {
+  table-layout: auto !important;
+  width: max-content !important;
+  min-width: 100% !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody > tr > td[colspan], .sapMListNoData) thead > tr > th:not(.sapMListTblSelCol) {
+  width: auto !important;
+  white-space: nowrap !important;
+  padding-inline: 0.75rem !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody > tr > td[colspan], .sapMListNoData) thead > tr > th:not(.sapMListTblSelCol) *,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody > tr > td[colspan], .sapMListNoData) thead > tr > th:not(.sapMListTblSelCol) .sapMColumnHeaderContent,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody > tr > td[colspan], .sapMListNoData) thead > tr > th:not(.sapMListTblSelCol) .sapMText,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody > tr > td[colspan], .sapMListNoData) thead > tr > th:not(.sapMListTblSelCol) .sapMLabel {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody > tr > td[colspan], .sapMListNoData) tbody > tr > td[colspan] {
+  position: sticky;
+  left: 0;
+  width: 100vw !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
+  text-align: center !important;
+}
+
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable thead > tr > th {
+  white-space: nowrap !important;
+  text-overflow: clip !important;
+}
+
 /*# sourceMappingURL=style.css.map */

@@ -4,124 +4,355 @@
   xmlns="sap.m"
   xmlns:core="sap.ui.core"
   displayBlock="true">
-  <Page showHeader="false" enableScrolling="true" class="app-page" busy="{view>/busy}">
+
+  <Page
+    showHeader="false"
+    enableScrolling="true"
+    class="app-page"
+    busy="{view>/busy}">
+
     <content>
       <VBox class="app-pad sapUiSizeCompact">
-        <HBox justifyContent="SpaceBetween" alignItems="Start" class="aamlPageHeader">
+
+        <HBox
+          justifyContent="SpaceBetween"
+          alignItems="Start"
+          class="aamlPageHeader">
+
           <VBox>
-            <Title text="{i18n>caseTitle}" level="H2" class="aamlPageTitle"/>
-            <Text text="{i18n>caseSubtitle}" class="aamlPageSubtitle"/>
+            <Title
+              text="{i18n>caseTitle}"
+              level="H2"
+              class="aamlPageTitle"/>
+
+            <Text
+              text="{i18n>caseSubtitle}"
+              class="aamlPageSubtitle"/>
           </VBox>
-          <Button text="{i18n>back}" icon="sap-icon://nav-back" type="Emphasized" press=".onBack" class="aamlBtn aamlBtnGo"/>
+
+          <Button
+            text="{i18n>back}"
+            icon="sap-icon://nav-back"
+            type="Emphasized"
+            press=".onBack"
+            class="aamlBtn aamlBtnGo"/>
         </HBox>
 
-        <!-- ============ Filters card (بتفلتر الـ Cases بتاعة الفترة المختارة) ============ -->
+        <!-- Filters card -->
         <VBox class="aamlSection aamlSectionFirst">
+
           <Toolbar class="aamlTableToolbar">
-            <Button icon="sap-icon://nav-back" type="Transparent" tooltip="{i18n>changePeriod}" press=".onBack"/>
-            <core:Icon src="sap-icon://filter" class="aamlToolbarIcon"/>
-            <Title text="{i18n>filters}" level="H3"/>
+            <Button
+              icon="sap-icon://nav-back"
+              type="Transparent"
+              tooltip="{i18n>changePeriod}"
+              press=".onBack"/>
+
+            <core:Icon
+              src="sap-icon://filter"
+              class="aamlToolbarIcon"/>
+
+            <Title
+              text="{i18n>filters}"
+              level="H3"/>
+
             <ToolbarSpacer/>
-            <Text text="{view>/periodText}" class="aamlSelCount"/>
+
+            <Text
+              text="{view>/periodText}"
+              class="aamlSelCount"/>
           </Toolbar>
-          <HBox wrap="Wrap" alignItems="End" class="aamlFilterBar aamlFilter4">
+
+          <HBox
+            wrap="Wrap"
+            alignItems="End"
+            class="aamlFilterBar aamlFilter4">
+
             <VBox class="aamlFilterField">
-              <Label text="{i18n>filterHospital}" labelFor="fHospital"/>
-              <Input id="fHospital" width="100%" submit=".onSearch" liveChange=".onFilterInput"/>
+              <Label
+                text="{i18n>filterHospital}"
+                labelFor="fHospital"/>
+
+              <Input
+                id="fHospital"
+                width="100%"
+                submit=".onSearch"
+                liveChange=".onFilterInput"/>
             </VBox>
+
             <VBox class="aamlFilterField">
-              <Label text="{i18n>filterModality}" labelFor="fModality"/>
-              <Input id="fModality" width="100%" submit=".onSearch" liveChange=".onFilterInput"/>
+              <Label
+                text="{i18n>filterModality}"
+                labelFor="fModality"/>
+
+              <Input
+                id="fModality"
+                width="100%"
+                submit=".onSearch"
+                liveChange=".onFilterInput"/>
             </VBox>
+
             <VBox class="aamlFilterField">
-              <Label text="{i18n>filterMaterial}" labelFor="fMaterial"/>
-              <Input id="fMaterial" width="100%" placeholder="{i18n>materialSearch}" submit=".onSearch" liveChange=".onFilterInput"/>
+              <Label
+                text="{i18n>filterMaterial}"
+                labelFor="fMaterial"/>
+
+              <Input
+                id="fMaterial"
+                width="100%"
+                placeholder="{i18n>materialSearch}"
+                submit=".onSearch"
+                liveChange=".onFilterInput"/>
             </VBox>
+
             <VBox class="aamlFilterField">
-              <Label text="{i18n>filterStatus}" labelFor="fStatus"/>
-              <!-- الـ keys لازم تفضل زي قيم Status في الـ backend؛ النصوص من الـ i18n -->
-              <Select id="fStatus" width="100%" selectedKey="" change=".onFilterInput">
-                <core:Item key="" text="{i18n>filterAll}"/>
-                <core:Item key="Ready" text="{i18n>statusReady}"/>
-                <core:Item key="Blocked" text="{i18n>statusBlocked}"/>
-                <core:Item key="NeedsCorrection" text="{i18n>statusNeedsCorrection}"/>
+              <Label
+                text="{i18n>filterStatus}"
+                labelFor="fStatus"/>
+
+              <Select
+                id="fStatus"
+                width="100%"
+                selectedKey=""
+                change=".onFilterInput">
+
+                <core:Item
+                  key=""
+                  text="{i18n>filterAll}"/>
+
+                <core:Item
+                  key="Ready"
+                  text="{i18n>statusReady}"/>
+
+                <core:Item
+                  key="Blocked"
+                  text="{i18n>statusBlocked}"/>
+
+                <core:Item
+                  key="NeedsCorrection"
+                  text="{i18n>statusNeedsCorrection}"/>
               </Select>
             </VBox>
+
             <VBox class="aamlFilterField aamlFilterActions">
               <Label text="&#160;"/>
+
               <HBox class="aamlFilterButtons">
-                <Button text="{i18n>go}" icon="sap-icon://search" type="Emphasized" press=".onSearch" class="aamlBtn aamlBtnGo"/>
-                <Button text="{i18n>clear}" icon="sap-icon://clear-filter" type="Default"
-                        enabled="{view>/canClearFilters}" press=".onClearFilters" class="aamlBtn aamlBtnClear"/>
+                <Button
+                  text="{i18n>go}"
+                  icon="sap-icon://search"
+                  type="Emphasized"
+                  press=".onSearch"
+                  class="aamlBtn aamlBtnGo"/>
+
+                <Button
+                  text="{i18n>clear}"
+                  icon="sap-icon://clear-filter"
+                  type="Default"
+                  enabled="{view>/canClearFilters}"
+                  press=".onClearFilters"
+                  class="aamlBtn aamlBtnClear"/>
               </HBox>
             </VBox>
+
           </HBox>
         </VBox>
 
-        <!-- ============ Cases table card (Normal + Nuclear rows in one table) ============ -->
-        <VBox class="aamlSection aamlSectionFit">
-          <Table id="caseTable" class="aamlTable aamlTableFit" mode="MultiSelect" fixedLayout="true" showSeparators="Inner"
-                 growing="true" growingThreshold="50" noDataText="{i18n>noDataPeriod}"
-                 selectionChange=".onSelectionChange" updateFinished=".onTableUpdated"
-                 items="{ path: '/CaseConsumption',
-                            parameters: { $select: 'ID,CaseId,ServiceDate,Hospital,Modality,Material,MaterialDescription,MaterialClass,Quantity,EntryUnit,ActualMci,MaximumMciPerVial,CalculatedVials,Batch,EstimatedWaste,Plant,StorageLocation,Status,ErrorMessage' },
-                            sorter: [{ path: 'ServiceDate', descending: true }, { path: 'CaseId' }] }">
-            <headerToolbar>
-              <Toolbar class="aamlTableToolbar">
-                <core:Icon src="sap-icon://list" class="aamlToolbarIcon"/>
-                <Title id="caseTableTitle" text="{i18n>caseListTitle}" level="H3"/>
-                <ToolbarSpacer/>
-                <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>refresh}" press=".onRefresh"/>
-              </Toolbar>
-            </headerToolbar>
-            <columns>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="5%"><Text text="{i18n>colCase}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="6%"><Text text="{i18n>colDate}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="5%"><Text text="{i18n>colHospMod}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="11%"><Text text="{i18n>colMaterial}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="5%"><Text text="{i18n>colClass}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="6%"><Text text="{i18n>colModel}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="5%"><Text text="{i18n>colMci}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="5%"><Text text="{i18n>colCapacity}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="10%"><Text text="{i18n>colQtyPost}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="6%"><Text text="{i18n>colPlantSloc}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="6%"><Text text="{i18n>colBatch}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="7%"><Text text="{i18n>colBatchRule}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="5%"><Text text="{i18n>colWaste}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="6%"><Text text="{i18n>colStatus}"/></Column>
-              <Column hAlign="Center" styleClass="aamlColCenter" width="12%"><Text text="{i18n>colMessage}"/></Column>
-            </columns>
-            <items>
-              <ColumnListItem type="Active">
-                <cells>
-                  <Text text="{CaseId}"/>
-                  <Text text="{ServiceDate}"/>
-                  <Text text="{parts: ['Hospital', 'Modality'], formatter: '.formatter.hospMod'}"/>
-                  <ObjectIdentifier title="{Material}" text="{MaterialDescription}"/>
-                  <Text text="{path: 'MaterialClass', formatter: '.formatter.classText'}"/>
-                  <Text text="{path: 'MaterialClass', formatter: '.formatter.modelText'}"/>
-                  <Text text="{path: 'ActualMci', formatter: '.formatter.num3'}"/>
-                  <Text text="{path: 'MaximumMciPerVial', formatter: '.formatter.capacity'}"/>
-                  <Text text="{parts: ['MaterialClass', 'Quantity', 'EntryUnit', 'ActualMci', 'MaximumMciPerVial', 'CalculatedVials'], formatter: '.formatter.postingQty'}"/>
-                  <Text text="{parts: ['Plant', 'StorageLocation'], formatter: '.formatter.plantSloc'}"/>
-                  <Text text="{Batch}"/>
-                  <Text text="{path: 'MaterialClass', formatter: '.formatter.batchRule'}"/>
-                  <Text text="{parts: ['MaterialClass', 'EstimatedWaste'], formatter: '.formatter.waste'}"/>
-                  <ObjectStatus class="aamlStatus" text="{Status}" state="{path: 'Status', formatter: '.formatter.statusState'}"/>
-                  <Text class="aamlWrap aamlMsg" text="{ErrorMessage}"/>
-                </cells>
-              </ColumnListItem>
-            </items>
-          </Table>
+        <!-- Cases table card: Normal + Nuclear -->
+        <VBox class="aamlSection">
 
-          <!-- Footer: عدد الصفوف المختارة (يسار) + زرار Post (يمين، معطّل لحد ما تختار صف) -->
-          <HBox justifyContent="SpaceBetween" alignItems="Center" class="aamlCardFooter aamlCardFooterSplit aamlFilterActions">
-            <Text text="{view>/selectedText}" class="aamlSelCount"/>
-            <Button text="{= ${view>/selectedCount} > 0 ? ${i18n>postSelected} + ' (' + ${view>/selectedCount} + ')' : ${i18n>postSelected} }"
-                    icon="sap-icon://accept" type="Accept" enabled="{= ${view>/selectedCount} > 0 }"
-                    press=".onPost" class="aamlBtn aamlBtnPost aamlBtnWide"/>
+          <!-- Toolbar ثابت: برّا الـ scroll الأفقي -->
+          <Toolbar class="aamlTableToolbar">
+
+            <core:Icon
+              src="sap-icon://list"
+              class="aamlToolbarIcon"/>
+
+            <Title
+              id="caseTableTitle"
+              text="{i18n>caseListTitle}"
+              level="H3"/>
+
+            <ToolbarSpacer/>
+
+            <Button
+              icon="sap-icon://refresh"
+              type="Transparent"
+              tooltip="{i18n>refresh}"
+              press=".onRefresh"/>
+          </Toolbar>
+
+          <ScrollContainer
+            horizontal="true"
+            vertical="false"
+            width="100%"
+            class="aamlTableScroll">
+
+            <Table
+              id="caseTable"
+              class="aamlTable"
+              mode="MultiSelect"
+              fixedLayout="false"
+              showSeparators="Inner"
+              growing="true"
+              growingThreshold="50"
+              noDataText="{i18n>noDataPeriod}"
+              selectionChange=".onSelectionChange"
+              updateFinished=".onTableUpdated"
+              items="{
+                path: '/CaseConsumption',
+                parameters: {
+                  $select: 'ID,CaseId,ServiceDate,Hospital,Modality,Material,MaterialDescription,MaterialClass,Quantity,EntryUnit,ActualMci,MaximumMciPerVial,CalculatedVials,Batch,EstimatedWaste,Plant,StorageLocation,Status,ErrorMessage'
+                },
+                sorter: [
+                  { path: 'ServiceDate', descending: true },
+                  { path: 'CaseId' }
+                ]
+              }">
+
+              <columns>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colCase}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colDate}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colHospMod}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colMaterial}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colClass}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colModel}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colMci}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colCapacity}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colQtyPost}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colPlantSloc}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colBatch}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colBatchRule}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colWaste}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colStatus}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colMessage}"/>
+                </Column>
+
+              </columns>
+
+              <items>
+                <ColumnListItem type="Active">
+                  <cells>
+
+                    <Text text="{CaseId}"/>
+
+                    <Text text="{ServiceDate}"/>
+
+                    <Text
+                      text="{parts: ['Hospital', 'Modality'], formatter: '.formatter.hospMod'}"/>
+
+                    <ObjectIdentifier
+                      title="{Material}"
+                      text="{MaterialDescription}"/>
+
+                    <Text
+                      text="{path: 'MaterialClass', formatter: '.formatter.classText'}"/>
+
+                    <Text
+                      text="{path: 'MaterialClass', formatter: '.formatter.modelText'}"/>
+
+                    <Text
+                      text="{path: 'ActualMci', formatter: '.formatter.num3'}"/>
+
+                    <Text
+                      text="{path: 'MaximumMciPerVial', formatter: '.formatter.capacity'}"/>
+
+                    <Text
+                      text="{parts: ['MaterialClass', 'Quantity', 'EntryUnit', 'ActualMci', 'MaximumMciPerVial', 'CalculatedVials'], formatter: '.formatter.postingQty'}"/>
+
+                    <Text
+                      text="{parts: ['Plant', 'StorageLocation'], formatter: '.formatter.plantSloc'}"/>
+
+                    <Text text="{Batch}"/>
+
+                    <Text
+                      text="{path: 'MaterialClass', formatter: '.formatter.batchRule'}"/>
+
+                    <Text
+                      text="{parts: ['MaterialClass', 'EstimatedWaste'], formatter: '.formatter.waste'}"/>
+
+                    <ObjectStatus
+                      class="aamlStatus"
+                      text="{Status}"
+                      state="{path: 'Status', formatter: '.formatter.statusState'}"/>
+
+                    <Text
+                      class="aamlWrap aamlMsg"
+                      text="{ErrorMessage}"/>
+
+                  </cells>
+                </ColumnListItem>
+              </items>
+
+            </Table>
+
+          </ScrollContainer>
+
+          <!-- Footer: selection count + Post button -->
+          <HBox
+            justifyContent="SpaceBetween"
+            alignItems="Center"
+            class="aamlCardFooter aamlCardFooterSplit aamlFilterActions">
+
+            <Text
+              text="{view>/selectedText}"
+              class="aamlSelCount"/>
+
+            <Button
+              text="{= ${view>/selectedCount} > 0 ? ${i18n>postSelected} + ' (' + ${view>/selectedCount} + ')' : ${i18n>postSelected} }"
+              icon="sap-icon://accept"
+              type="Accept"
+              enabled="{= ${view>/selectedCount} > 0 }"
+              press=".onPost"
+              class="aamlBtn aamlBtnPost aamlBtnWide"/>
+
           </HBox>
         </VBox>
+
       </VBox>
     </content>
   </Page>

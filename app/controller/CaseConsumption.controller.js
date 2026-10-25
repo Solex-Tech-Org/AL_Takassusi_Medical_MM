@@ -143,34 +143,79 @@ sap.ui.define([
             const total = oEvent.getParameter("total");
             this.byId("caseTableTitle").setText(`${this.getText("caseListTitle")} (${total != null ? total : 0})`);
             this._syncSelection();
+            setTimeout(() => this._syncHeaderCheckbox(), 0);
         },
 
         /* =========================================================
          * Selection
          * ========================================================= */
 
-        /** Only rows with status Ready can be selected (select-all كمان بيتفلتر). */
+        /**
+         * Only rows with status Ready can be selected.
+         * Select All: لو في صفوف متحددة قبل الضغطة = إلغاء الكل، غير كده = تحديد كل الـ Ready.
+         */
         onSelectionChange: function (oEvent) {
-            const rejected = oEvent.getParameter("listItems").filter(item =>
-                item.getSelected() && item.getBindingContext().getProperty("Status") !== "Ready");
-            rejected.forEach(item => item.setSelected(false));
-            if (rejected.length) { MessageToast.show(this.getText("onlyReadyRows")); }
+            const table = this.byId("caseTable");
+            const isReady = item => item.getBindingContext().getProperty("Status") === "Ready";
+
+            if (oEvent.getParameter("selectAll")) {
+                if (this._hadSelection) {
+                    // كان في تحديد قبل الضغطة: المقصود "إلغاء الكل"
+                    table.removeSelections(true);
+                } else {
+                    const items = table.getItems();
+                    items.forEach(item => item.setSelected(isReady(item)));
+                    if (items.some(item => !isReady(item))) {
+                        MessageToast.show(this.getText("onlyReadyRows"));
+                    }
+                }
+            } else {
+                // اختيار يدوي: ارفض أي صف مش Ready
+                const rejected = oEvent.getParameter("listItems").filter(item =>
+                    item.getSelected() && !isReady(item));
+                rejected.forEach(item => item.setSelected(false));
+                if (rejected.length) { MessageToast.show(this.getText("onlyReadyRows")); }
+            }
 
             this._syncSelection();
+            setTimeout(() => this._syncHeaderCheckbox(), 0);
         },
 
         /** بيحدّث عداد الصفوف المختارة والنص اللي في فوتر الكارت (وبيفعّل/يعطّل زرار Post من view>/selectedCount). */
         _syncSelection: function () {
             const table = this.byId("caseTable");
             const n = table ? table.getSelectedContexts().length : 0;
+            this._hadSelection = n > 0; // حالة التحديد قبل الضغطة الجاية على Select All
             const vm = this.getView().getModel("view");
             vm.setProperty("/selectedCount", n);
             vm.setProperty("/selectedText", n ? this.getText("selectedCount", [n]) : this.getText("selectHint"));
         },
 
+        /** checkbox الهيدر متعلّم لما كل الـ Ready متحددة، وفاضي غير كده. */
+        _syncHeaderCheckbox: function () {
+            const table = this.byId("caseTable");
+            if (!table) { return; }
+            const ready = table.getItems().filter(i => {
+                const ctx = i.getBindingContext();
+                return ctx && ctx.getProperty("Status") === "Ready";
+            });
+            const all = ready.length > 0 && ready.every(i => i.getSelected());
+
+            // الطريقة الأولى: الـ API الداخلي بتاع UI5
+            const cb = table._getSelectAllCheckbox && table._getSelectAllCheckbox();
+            if (cb) {
+                cb.setSelected(all);
+                return;
+            }
+            // احتياطي: ندوّر على الـ checkbox في الـ DOM
+            const $cb = table.$().find("thead .sapMCb");
+            if ($cb.length && $cb.control(0)) { $cb.control(0).setSelected(all); }
+        },
+
         _clearSelection: function () {
             this.byId("caseTable").removeSelections(true);
             this._syncSelection();
+            setTimeout(() => this._syncHeaderCheckbox(), 0);
         },
 
         /* =========================================================

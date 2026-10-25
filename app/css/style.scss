@@ -3242,3 +3242,285 @@ $fit-cols: 3.6, 5.8, 6.1, 8.8, 5.2, 7.4, 4.6, 5.6, 9.3, 5.4, 5.2, 5.2, 4.7, 7.4,
         }
     }
 }
+
+// ============================================================
+// 38. Checkbox + صف مختار + فواصل كاملة
+// ============================================================
+@keyframes aamlRowSelect {
+    0%   { background-color: rgba($primary, .30); }
+    100% { background-color: rgba($primary, .10); }
+}
+
+@keyframes aamlBarIn {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+}
+
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable {
+
+    // ---------- checkbox متوسّط ----------
+    th.sapMListTblSelCol,
+    td.sapMListTblSelCol {
+        width: 2.4rem !important;
+        min-width: 2.4rem !important;
+        max-width: 2.4rem !important;
+        padding: 0 !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+        position: relative;
+    }
+
+    th.sapMListTblSelCol .sapMCb,
+    td.sapMListTblSelCol .sapMCb {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 2rem;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .sapMCbBg { margin: 0 !important; }
+
+    .sapMCb, .sapMCb:focus, .sapMCb:focus-within, .sapMCbBg {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    .sapMCb::before, .sapMCb::after { display: none !important; }
+
+    // ---------- الصف المختار ----------
+    tbody>tr>td { transition: background-color .25s $ease; }
+
+    tbody>tr.sapMLIBSelected>td,
+    tbody>tr.sapMLIBSelected:hover>td {
+        background-color: rgba($primary, .10) !important;
+        animation: aamlRowSelect .4s $ease both;
+    }
+
+    tbody>tr.sapMLIBSelected>td.sapMListTblSelCol::before {
+        content: "";
+        position: absolute;
+        inset-block: 0;
+        left: 0;
+        width: 4px;
+        background: $primary;
+        animation: aamlBarIn .25s $ease both;
+    }
+
+    tbody>tr.sapMLIBSelected .sapMText {
+        color: $primary-dark !important;
+        font-weight: 600;
+    }
+
+    // ---------- الفواصل كاملة ----------
+    table, .sapMListTbl {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+    }
+
+    // كل خلية: خط تحت وخط يمين (بما فيهم آخر صف)
+    tbody>tr>td,
+    tbody>tr:last-child>td,
+    tbody>tr.sapMLIBSelected>td,
+    tbody>tr.sapMLIBSelected:hover>td {
+        border-bottom: 1px solid $tbl-line !important;
+        border-right: 1px solid $tbl-line !important;
+    }
+
+    // الخلية اللي قبل آخر عمود مخفي ما تخسرش الخط
+    tbody>tr>td:last-child,
+    thead>tr>th:last-child {
+        border-right: 0 !important;
+    }
+}
+
+// ============================================================
+// 39. الجدول يعمل scroll أفقي لوحده، والفوتر (عداد + Post) ثابت بعرض الكارت
+// ============================================================
+.app-page .aamlSection.aamlSection {
+    overflow: visible !important;   // الكارت نفسه من غير scroll
+}
+
+.app-page .aamlTableScroll {
+    width: 100%;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+}
+
+.app-page .aamlCardFooter {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    width: 100% !important;
+    box-sizing: border-box;
+    background: #fbfcfe;
+    border-radius: 0 0 $radius $radius;
+    box-shadow: 0 -4px 10px -6px rgba(0, 0, 0, .18);
+}
+
+// ============================================================
+// 40. Toolbar الكارت (عنوان + refresh) ثابت بعرض الكارت
+// ============================================================
+.app-page .aamlSection>.sapMTB.aamlTableToolbar {
+    width: 100% !important;
+    box-sizing: border-box;
+    position: sticky;
+    left: 0;
+}
+
+// ============================================================
+// 41. حواف الكروت كاملة + الخانات على مستوى واحد في الشاشات الصغيرة
+// ============================================================
+
+// ---------- 1) حواف الكارت ----------
+.app-page .aamlSection.aamlSection {
+    overflow: clip !important;          // بيقص الأطراف من غير ما يعمل scroll container (فالـ sticky يشتغل)
+    border: 1px solid $line-strong !important;
+    border-radius: $radius !important;
+    background-clip: padding-box;
+}
+
+// أول وآخر عنصر جوه الكارت ياخدوا نفس تدوير الحواف
+.app-page .aamlSection>.sapMTB.aamlTableToolbar:first-child {
+    border-top-left-radius: $radius;
+    border-top-right-radius: $radius;
+}
+
+.app-page .aamlSection>.aamlFilterBar:last-child,
+.app-page .aamlSection>.aamlCardFooter:last-child {
+    border-bottom-left-radius: $radius;
+    border-bottom-right-radius: $radius;
+}
+
+// الـ hover ما يغيّرش سمك الحد
+.app-page .aamlSection.aamlSection:hover {
+    border-color: $primary-light !important;
+}
+
+// ---------- 2) الخانات على مستوى واحد ----------
+@media (max-width: 1100px) {
+    .app-page .aamlFilterBar {
+        align-items: start !important;   // كل الخلايا تبدأ من فوق بدل end
+        row-gap: .75rem;
+
+        .aamlFilterField {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch;
+            align-self: start;
+            min-width: 0;
+        }
+
+        // الـ label نفس الارتفاع في كل الخانات عشان الخانات تقف على نفس الخط
+        .aamlFilterField .sapMLabel {
+            display: block;
+            height: 1.1rem;
+            line-height: 1.1rem;
+            margin-bottom: .3rem !important;
+        }
+
+        // الأزرار (Go / Clear) تاخد صف لوحدها من أول الكارت
+        .aamlFilterField.aamlFilterActions {
+            grid-column: 1 / -1;
+            justify-self: start;
+            align-self: start;
+        }
+
+        .aamlFilterField.aamlFilterActions .sapMLabel {
+            display: none;
+        }
+    }
+}
+
+// ============================================================
+// 42. منع رجّة الجدول لما تختار صف
+// ============================================================
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable {
+
+    // الخط بنفس الوزن في الصف المختار وغير المختار (الوزن الأسمك هو اللي بيوسّع الأعمدة)
+    tbody>tr.sapMLIBSelected .sapMText,
+    tbody>tr.sapMLIBSelected .sapMObjectIdentifierText {
+        font-weight: inherit !important;
+    }
+
+    // التمييز بالنص يبقى باللون بس
+    tbody>tr.sapMLIBSelected .sapMText {
+        color: $primary-dark !important;
+    }
+
+    // الحدود ثابتة المقاس في كل الحالات
+    tbody>tr>td,
+    tbody>tr.sapMLIBSelected>td,
+    tbody>tr.sapMLIBSelected:hover>td {
+        box-sizing: border-box;
+    }
+
+    // الشريط الجانبي ما يأثرش على layout الخلية
+    tbody>tr>td.sapMListTblSelCol::before {
+        content: "";
+        position: absolute;
+        inset-block: 0;
+        left: 0;
+        width: 4px;
+        background: transparent;
+        pointer-events: none;
+    }
+
+    tbody>tr.sapMLIBSelected>td.sapMListTblSelCol::before {
+        background: $primary;
+    }
+
+    // الأنيميشن أخف: لون بس من غير حركة
+    tbody>tr.sapMLIBSelected>td {
+        animation: aamlRowSelect .3s $ease both;
+    }
+}
+
+// ============================================================
+// 44. الجدول الفاضي في الشاشات الضيقة: العناوين كاملة + الرسالة ظاهرة
+// ============================================================
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable:has(tbody>tr>td[colspan], .sapMListNoData) {
+
+    // الأعمدة على قد العنوان بدل التوزيع المتساوي اللي بيقص الكلام
+    table,
+    .sapMListTbl {
+        table-layout: auto !important;
+        width: max-content !important;
+        min-width: 100% !important;
+    }
+
+    thead>tr>th:not(.sapMListTblSelCol) {
+        width: auto !important;
+        white-space: nowrap !important;
+        padding-inline: .75rem !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+
+        *,
+        .sapMColumnHeaderContent,
+        .sapMText,
+        .sapMLabel {
+            white-space: nowrap !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+    }
+
+    // رسالة "No data": تفضل ظاهرة على عرض الشاشة (مش على عرض الجدول الكامل)
+    tbody>tr>td[colspan] {
+        position: sticky;
+        left: 0;
+        width: 100vw !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+        text-align: center !important;
+    }
+}
+
+// عناوين كل الجداول: ما تتقصش (بتاخد عرضها كامل) والجدول يعمل scroll أفقي
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable thead>tr>th {
+    white-space: nowrap !important;
+    text-overflow: clip !important;
+}
