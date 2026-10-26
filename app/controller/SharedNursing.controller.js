@@ -44,26 +44,49 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/m
                 console.debug("[SharedNursing] _reset() -> الجدول اتفضّى. اللي نادى عليها:", new Error().stack);   // للتشخيص: شيله بعد ما نلاقي السبب
                 const vm = this._vm(); vm.setProperty("/Items", []); vm.setProperty("/CostCenter", ""); vm.setProperty("/Plant", ""); vm.setProperty("/ClientRequestId", crypto.randomUUID()); },
 
+            /** يرجّع نتايج البحث (>= 2 حرف) ويحدّث /Suggestions. بيتجاهل أي رد أقدم من آخر طلب. */
+            _search: async function (term) {
+                const vm = this._vm();
+                term = (term || "").trim();
+                if (term.length < 2) { vm.setProperty("/Suggestions", []); return []; }
+                const reqId = this._searchReq = (this._searchReq || 0) + 1;
+                const r = await this.callFunction("searchNursingMaterials", { term, hospital: vm.getProperty("/Hospital"), modality: vm.getProperty("/Modality") });
+                const rows = Array.isArray(r) ? r : (r && r.value) || [];
+                if (reqId === this._searchReq) vm.setProperty("/Suggestions", rows);   // رد قديم ما يكتبش فوق الأحدث
+                return rows;
+            },
+
             /** Search on demand only (>= 2 chars); no full list is preloaded. */
             onSuggest: async function (oEvent) {
-                const term = (oEvent.getParameter("suggestValue") || "").trim(), vm = this._vm(), field = oEvent.getSource();
-                if (term.length < 2) return;
+                const field = oEvent.getSource();
+                const term = oEvent.getParameter("suggestValue") || field.getValue();   // fallback لكيبورد الموبايل
                 try {
-                    const r = await this.callFunction("searchNursingMaterials", { term, hospital: vm.getProperty("/Hospital"), modality: vm.getProperty("/Modality") });
-                    const rows = Array.isArray(r) ? r : (r && r.value) || [];
-                    vm.setProperty("/Suggestions", rows);
-                    field.suggest();                               // re-open the suggestion popup once the async result arrived
+                    await this._search(term);
+                    if (field.getDomRef() || field.getParent()) field.suggest();       // re-open the suggestion popup once the async result arrived
                 } catch (e) {
-                    vm.setProperty("/Suggestions", []);
+                    this._vm().setProperty("/Suggestions", []);
                     console.warn("searchNursingMaterials failed for term:", term, e);
                     MessageToast.show(e && e.message ? e.message : this.getText("selectMaterialFirst"));
                 }
             },
+
             /** Fired by the "search" event: Enter, the search icon, a picked suggestion (param suggestionItem), or the Add button. */
-            onAddMaterial: function (oEvent) {
-                if (oEvent.getParameter("clearButtonPressed")) return;             // the X button also fires "search"
-                const vm = this._vm(), item = oEvent.getParameter("suggestionItem");
-                const mat = item ? vm.getProperty(item.getBindingContext("view").getPath()) : (vm.getProperty("/Suggestions") || [])[0];
+            onAddMaterial: async function (oEvent) {
+                if (oEvent.getParameter && oEvent.getParameter("clearButtonPressed")) return;   // the X button also fires "search"
+                const vm = this._vm(), field = this.byId("matSearch");
+                const item = oEvent.getParameter && oEvent.getParameter("suggestionItem");
+                let mat;
+                if (item) {
+                    mat = vm.getProperty(item.getBindingContext("view").getPath());
+                } else {
+                    const typed = (field.getValue() || "").trim();
+                    let rows = vm.getProperty("/Suggestions") || [];
+                    if (!rows.length && typed.length >= 2) {        // مفيش اقتراحات (غالبًا موبايل): ابحث دلوقتي بالنص المكتوب
+                        try { rows = await this._search(typed); }
+                        catch (e) { this.showError(e); return; }
+                    }
+                    mat = rows.find(r => String(r.Material) === typed) || rows[0];   // كود مطابق بالظبط، وإلا أول نتيجة
+                }
                 if (mat) this._add(mat);
                 else MessageToast.show(this.getText("selectMaterialFirst"));       // مفيش مادة مختارة/مقترحة: نوضّح للمستخدم يعمل إيه
             },
@@ -78,7 +101,7 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/m
                 }
                 vm.setProperty("/Suggestions", []);
                 const search = this.byId("matSearch"); search.setValue("");
-                search.focus();                                    // الفوكس يرجع لخانة البحث، فزرار Add ما يفضلش "معلّق" بعد الضغط
+                if (!sap.ui.Device.system.phone) search.focus();   // على الموبايل الفوكس بيفتح الكيبورد تاني؛ الفوكس يرجع لخانة البحث، فزرار Add ما يفضلش "معلّق" بعد الضغط
             },
             /** null = OK, otherwise the error text. Empty/0 qty is not an error (it is simply not posted). Available = null (no Hospital/Modality yet) is left to the backend. */
             _qtyError: function (item, qty) {
