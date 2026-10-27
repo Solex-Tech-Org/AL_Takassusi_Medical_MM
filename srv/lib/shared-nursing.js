@@ -37,8 +37,9 @@ async function searchLocal({ term, hospital, modality }) {
 
 /**
  * Search materials for Shared Nursing.
- * When S4 Product API env is set, searches Product (MATNR / MAKTX / MEINS);
- * otherwise falls back to local MaterialMaster.
+ * Searches S/4 Product (MATNR / MAKTX / MEINS) through BTP destination
+ * AAML_Public_Cloud. Falls back to local MaterialMaster only when that
+ * destination is not configured.
  */
 async function search({ term, hospital, modality }) {
   const t = String(term || '').trim();

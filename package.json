@@ -22,15 +22,20 @@
       "auth": "dummy",
       "destinations": true,
       "html5-repo": true,
+      "AAML_ProductApi": {
+        "kind": "rest",
+        "credentials": {
+          "destination": "AAML_Public_Cloud",
+          "path": "/sap/opu/odata4/sap/api_product/srvd_a2x/sap/product/0002"
+        }
+      },
       "[production]": {
         "auth": "dummy"
       }
     },
     "aaml": {
       "productApi": {
-        "baseUrl": "",
-        "username": "",
-        "password": "",
+        "destination": "AAML_Public_Cloud",
         "language": "EN"
       }
     }
