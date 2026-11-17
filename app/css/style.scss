@@ -46,7 +46,6 @@
 //   43. الجدول الفاضي في الشاشات الضيقة: العناوين كاملة + الرسالة ظاهرة
 //   44. Case Consumption: حجم زر إعادة الحساب
 //   45. تفاعل زر إعادة الحساب وتوسيط أيقونة حذف المعاملة
-//   46. توسيط زر الحذف في سجل المعاملات + تحسين الضغط على Recalculate
 
 
 // ============================================================
@@ -3667,66 +3666,67 @@ $fit-cols: 3.6, 5.8, 6.1, 8.8, 5.2, 7.4, 4.6, 5.6, 9.3, 5.4, 5.2, 5.2, 4.7, 7.4,
 // ============================================================
 
 // زر الحذف في آخر عمود بسجل المعاملات: توسيط الزر والأيقونة داخل الخلية.
-.app-page .aamlTable[id$="--sessionsTable"] tbody>tr>td:has(.sapMBtn) {
+.app-page .aamlTable td:has(>.aamlDeleteSessionButton) {
     text-align: center !important;
     vertical-align: middle !important;
+}
 
-    .sapMBtn {
+.app-page .aamlTable .aamlDeleteSessionButton {
+    // Block-level flex lets auto margins center the button in a table cell.
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 2.25rem !important;
+    min-width: 2.25rem !important;
+    height: 2.25rem !important;
+    min-height: 2.25rem !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    vertical-align: middle !important;
+
+    .sapMBtnInner {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 50% !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        transition: background-color $dur-fast $ease, transform $dur-fast $ease !important;
+    }
+
+    .sapMBtnIcon {
+        position: static !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        width: 2.25rem !important;
-        min-width: 2.25rem !important;
-        height: 2.25rem !important;
-        min-height: 2.25rem !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
         padding: 0 !important;
-        border-radius: 50% !important;
-        cursor: pointer !important;
-        vertical-align: middle !important;
+        line-height: 1 !important;
+        color: #b91c1c !important;
+    }
 
-        .sapMBtnInner {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            width: 100% !important;
-            height: 100% !important;
-            min-width: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: 0 !important;
-            border-radius: 50% !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            transition: background-color $dur-fast $ease, transform $dur-fast $ease !important;
-        }
+    &:hover .sapMBtnInner,
+    .sapMBtnInner.sapMBtnHoverable:hover {
+        background: rgba(#dc2626, .1) !important;
+    }
 
-        .sapMBtnIcon {
-            position: static !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            line-height: 1 !important;
-            color: #b91c1c !important;
-        }
+    &:active .sapMBtnInner,
+    .sapMBtnInner.sapMBtnActive {
+        background: rgba(#dc2626, .18) !important;
+        transform: scale(.92);
+    }
 
-        &:hover .sapMBtnInner,
-        .sapMBtnInner.sapMBtnHoverable:hover {
-            background: rgba(#dc2626, .1) !important;
-        }
-
-        &:active .sapMBtnInner,
-        .sapMBtnInner.sapMBtnActive {
-            background: rgba(#dc2626, .18) !important;
-            transform: scale(.92);
-        }
-
-        &.sapMBtnDisabled {
-            cursor: default !important;
-            opacity: .4;
-        }
+    &.sapMBtnDisabled {
+        cursor: default !important;
+        opacity: .4;
     }
 }
 
@@ -3765,147 +3765,34 @@ $fit-cols: 3.6, 5.8, 6.1, 8.8, 5.2, 7.4, 4.6, 5.6, 9.3, 5.4, 5.2, 5.2, 4.7, 7.4,
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .app-page .aamlTable[id$="--sessionsTable"] tbody>tr>td:has(.sapMBtn) .sapMBtn .sapMBtnInner,
+    .app-page .aamlTable .aamlDeleteSessionButton .sapMBtnInner,
     .app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnInner {
         transition: none !important;
     }
 }
 
-// ============================================================
-// 46. توسيط زر الحذف في سجل المعاملات + تحسين الضغط على Recalculate
-// ============================================================
-$tblx: ".aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable";
-
-// ---------- 1) زر الحذف في النص ----------
-.app-page #{$tblx} tbody>tr>td:has(>.sapMBtn:not(.aamlDeleteBtn)) {
-    text-align: center !important;
-    vertical-align: middle !important;
-
-    >.sapMBtn {
-        display: flex !important;            // block-level: margin auto بتوسّطه حتى لو text-align شمال
-        align-items: center !important;
-        justify-content: center !important;
-        width: 2.25rem !important;
-        min-width: 2.25rem !important;
-        height: 2.25rem !important;
-        min-height: 2.25rem !important;
-        margin: 0 auto !important;
-        padding: 0 !important;
-        border-radius: 50% !important;
-
-        .sapMBtnInner {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            width: 100% !important;
-            height: 100% !important;
-            min-width: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: 0 !important;
-            border-radius: 50% !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            transition: background-color $dur-fast $ease, transform $dur-fast $ease !important;
-        }
-
-        .sapMBtnContent,
-        .sapMBtnIcon,
-        .sapMBtnIcon.sapUiIcon {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            width: auto !important;
-            height: auto !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            line-height: 1 !important;
-            color: #b91c1c !important;
-        }
-
-        &:hover .sapMBtnInner {
-            background: rgba(#dc2626, .1) !important;
-        }
-
-        &:active .sapMBtnInner {
-            background: rgba(#dc2626, .2) !important;
-            transform: scale(.9);
-        }
-    }
-}
-
-// ---------- 2) Recalculate pending cases: إحساس ضغط واضح ----------
-$recalc: ".app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent)";
-
-@keyframes aamlRecalcPulse {
-    0%   { box-shadow: 0 0 0 0 rgba($primary, .45); }
-    100% { box-shadow: 0 0 0 10px rgba($primary, 0); }
-}
-
-#{$recalc} {
-    cursor: pointer !important;
-    touch-action: manipulation;
-    user-select: none;
-
-    .sapMBtnInner {
-        transition: background-color $dur-fast $ease, border-color $dur-fast $ease,
-            color $dur-fast $ease, box-shadow $dur-fast $ease,
-            transform $dur-fast $ease !important;
+// Posted: أزرق لتمييز الحالة المرحّلة عن Ready الأخضر.
+// Recalculate: إزالة إطار الماوس العالق بعد الضغط مع الإبقاء على مؤشر لوحة المفاتيح.
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate {
+    &:focus:not(:focus-visible) .sapMBtnInner {
+        outline: none !important;
+        box-shadow: none !important;
+        border-color: rgba($primary, .28) !important;
     }
 
-    .sapMBtnIcon {
-        transform: rotate(0deg) !important;
-        transition: transform .45s $ease, color $dur-fast $ease !important;
+    &:focus:not(:focus-visible)::before,
+    &:focus:not(:focus-visible)::after,
+    &:focus:not(:focus-visible) .sapMBtnInner::before,
+    &:focus:not(:focus-visible) .sapMBtnInner::after,
+    &:focus:not(:focus-visible) .sapMBtnFocusDomRef::before,
+    &:focus:not(:focus-visible) .sapMBtnFocusDomRef::after {
+        outline: none !important;
+        border: 0 !important;
+        box-shadow: none !important;
     }
 
-    // hover: يرتفع شوية والأيقونة تلف نص لفة
-    &:hover .sapMBtnInner {
-        transform: translateY(-1px);
-        border-color: $primary !important;
-        background: rgba($primary, .13) !important;
-        box-shadow: 0 3px 8px rgba($primary, .2) !important;
-    }
-
-    &:hover .sapMBtnIcon {
-        transform: rotate(180deg) !important;
-    }
-
-    // ضغط: يتملي أزرق بنص أبيض وينزل شوية + نبضة حوالين الزرار
-    &:active .sapMBtnInner,
-    .sapMBtnInner.sapMBtnActive {
-        background: $primary !important;
-        border-color: $primary-dark !important;
-        color: $text-on-bar !important;
-        transform: translateY(1px) scale(.96);
-        box-shadow: inset 0 2px 4px rgba($primary-dark, .35) !important;
-        animation: aamlRecalcPulse .45s ease-out;
-    }
-
-    &:active .sapMBtnContent,
-    &:active .sapMBtnIcon {
-        color: $text-on-bar !important;
-    }
-
-    &:active .sapMBtnIcon {
-        transform: rotate(360deg) !important;
-    }
-
-    // focus بالكيبورد بس (مش بعد الضغط بالماوس)
     &:focus-visible .sapMBtnInner {
+        outline: none !important;
         box-shadow: 0 0 0 3px rgba($primary, .25) !important;
-    }
-
-    &.sapMBtnDisabled {
-        cursor: default !important;
-        opacity: .5;
-        pointer-events: none;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    #{$recalc} .sapMBtnInner,
-    #{$recalc} .sapMBtnIcon {
-        transition: none !important;
-        animation: none !important;
     }
 }

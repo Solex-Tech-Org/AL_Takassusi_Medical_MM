@@ -38,6 +38,7 @@ sap.ui.define([], function () {
             return quantity == null ? "-" : `${Number(quantity)} ${unit || ""}`.trim();
         },
         statusState: s => STATE[s] || "None",
+        caseStatusState: s => s === "Posted" ? "Information" : (STATE[s] || "None"),
         sapDoc: (d, y, i) => (d ? `${d}/${y || ""}${i ? "/" + i : ""}` : "")
     };
 });

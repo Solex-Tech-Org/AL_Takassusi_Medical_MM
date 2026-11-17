@@ -244,6 +244,7 @@
                       state="{path: 'SessionStatus', formatter: '.formatter.statusState'}"/>
 
                     <Button
+                      class="aamlDeleteSessionButton"
                       icon="sap-icon://delete"
                       type="Transparent"
                       tooltip="{i18n>deleteSession}"

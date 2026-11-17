@@ -4,6 +4,7 @@ const { SELECT, INSERT, UPDATE } = cds.ql;
 const calc = require('../../common/calculation/nuclear');
 const payload = require('../../common/integration/payload-builder');
 const { getS4Api, NotConfiguredError, getRemotePostingConfigIssues } = require('../../common/integration/s4-material-api');
+const { remotePostingEnabled } = require('../../common/integration/s4-config');
 const { OPEN } = require('./case-consumption');
 
 const E = () => cds.entities('aaml.mc');
@@ -76,10 +77,11 @@ async function executeDailyClose(serviceDate) {
   const latest = (await SELECT.from(DailyCloses).where({ ServiceDate: serviceDate }).orderBy('Version desc'))[0];
   if (latest && latest.Status !== 'Reversed') {
     if (['Posted', 'NoWaste'].includes(latest.Status)) return closeResult(latest, 'Daily close already completed - existing result returned');
+    if (latest.Status === 'Blocked') return closeResult(latest, 'Daily waste posting is blocked until the SAP result is checked manually');
     return postWaste(latest);                                          // WastePending / Error -> retry with same idempotency key
   }
   const wastePostingDateRule = cfg().s4?.wastePostingDateRule;
-  if (cfg().s4?.mode === 'remote' && !['ServiceDate', 'CurrentDate'].includes(wastePostingDateRule))
+  if (remotePostingEnabled('NuclearWaste') && !['ServiceDate', 'CurrentDate'].includes(wastePostingDateRule))
     return { ServiceDate: serviceDate, Status: 'Error', Message: 'Configure cds.aaml.s4.wastePostingDateRule as ServiceDate or CurrentDate before daily close.' };
   let lines;
   try { lines = await computeWaste(serviceDate); }
@@ -103,7 +105,9 @@ async function postWaste(close) {
   const { DailyCloses, WasteAllocations, PostingLogs, MovementTypeConfig } = E();
   const s4 = getS4Api();
   const allocs = await SELECT.from(WasteAllocations).where({ DailyClose_ID: close.ID });
-  const mv = await SELECT.one.from(MovementTypeConfig).where({ Scenario: 'NuclearWaste' });
+  let mv = await SELECT.one.from(MovementTypeConfig).where({ Scenario: 'NuclearWaste' });
+  if (!mv?.GoodsMovementType || /^DEMO/i.test(String(mv.GoodsMovementType)))
+    mv = await SELECT.one.from(MovementTypeConfig).where({ Scenario: 'NuclearConsumption' });
   const V = require('../../common/validation/validators');
   const bad = V.movementType(mv, cfg().prohibitedMovementTypes);
   const fail = async (msg, outcome) => {
@@ -112,13 +116,13 @@ async function postWaste(close) {
     await INSERT.into(PostingLogs).entries({ DailyClose_ID: close.ID, Scenario: 'NuclearWaste', IdempotencyKey: close.IdempotencyKey, Outcome: outcome, Message: msg.slice(0, 500) });
     return closeResult({ ...close, Status: 'Error' }, msg);
   };
-  if (cfg().s4?.mode === 'remote' && /^DEMO/i.test(String(mv?.GoodsMovementType || '')))
+  if (remotePostingEnabled('NuclearWaste') && /^DEMO/i.test(String(mv?.GoodsMovementType || '')))
     bad.push({ code: 'MOVEMENT_TYPE_PLACEHOLDER', message: 'Configure the SAP-approved goods-movement type before remote posting' });
   if (bad.length) return fail(V.msg(bad), 'BusinessError');
   const configIssues = getRemotePostingConfigIssues({ scenario: 'NuclearWaste' });
   if (configIssues.length) return fail(V.msg(configIssues), 'BusinessError');
   const wastePostingDateRule = cfg().s4?.wastePostingDateRule;
-  if (cfg().s4?.mode === 'remote' && !['ServiceDate', 'CurrentDate'].includes(wastePostingDateRule))
+  if (remotePostingEnabled('NuclearWaste') && !['ServiceDate', 'CurrentDate'].includes(wastePostingDateRule))
     return fail('Configure cds.aaml.s4.wastePostingDateRule as ServiceDate or CurrentDate before daily close.', 'BusinessError');
   const postingDate = wastePostingDateRule === 'ServiceDate' ? close.ServiceDate : new Date().toISOString().slice(0, 10);
   const body = payload.wastePosting(close, allocs, mv, close.IdempotencyKey, postingDate);
@@ -126,14 +130,37 @@ async function postWaste(close) {
   try { res = await s4.postMaterialDocument(body); }
   catch (e) {
     if (e instanceof NotConfiguredError) return fail(e.message, 'BusinessError');
-    res = await s4.findResultByIdempotencyKey(close.IdempotencyKey).catch(() => null);
-    if (!res) return fail(`Technical error: ${e.message}`, 'TechnicalError');
+    const message = `SAP waste posting result is uncertain. Do not retry until the daily document is checked in SAP. ${e.message}`.slice(0, 500);
+    await UPDATE(DailyCloses, close.ID).with({ Status: 'Blocked', ErrorMessage: message });
+    await UPDATE(WasteAllocations).with({ Status: 'Error' }).where({ DailyClose_ID: close.ID });
+    await INSERT.into(PostingLogs).entries({ DailyClose_ID: close.ID, Scenario: 'NuclearWaste',
+      IdempotencyKey: close.IdempotencyKey, Outcome: 'TechnicalError', Message: message });
+    return closeResult({ ...close, Status: 'Blocked', ErrorMessage: message }, message);
   }
   if (!res.success) return fail(res.Message, 'BusinessError');
+  let postedItems = res.Items || [];
+  if (!postedItems.length && remotePostingEnabled('NuclearWaste') && s4.findDocumentItems) {
+    try { postedItems = await s4.findDocumentItems(res.MaterialDocument, res.MaterialDocumentYear, 'NuclearWaste'); }
+    catch (error) { console.warn('Could not read SAP item numbers for the daily waste document:', error.message); }
+  }
+  const caseField = String(cfg().s4?.goodsIssueCaseLookupField || 'YY1_CaseID_MMI');
+  const usedItems = new Set();
   await UPDATE(DailyCloses, close.ID).with({ Status: 'Posted', ErrorMessage: null, SAPMaterialDocument: res.MaterialDocument, SAPMaterialDocumentYear: res.MaterialDocumentYear });
-  for (let i = 0; i < allocs.length; i++)
+  for (let i = 0; i < allocs.length; i++) {
+    let sapItem = postedItems[i];
+    if (postedItems.length && !res.Items?.length) {
+      const found = postedItems.findIndex((item, index) => !usedItems.has(index)
+        && String(item[caseField] || '') === String(allocs[i].CaseId || '')
+        && String(item.Material || '') === String(allocs[i].Material || '')
+        && String(item.Batch || '') === String(allocs[i].Batch || '')
+        && (!Number.isFinite(Number(item.QuantityInBaseUnit))
+          || Math.abs(Number(item.QuantityInBaseUnit) - Number(allocs[i].WasteVials)) < 0.0005));
+      if (found >= 0) { sapItem = postedItems[found]; usedItems.add(found); }
+      else sapItem = null;
+    }
     await UPDATE(WasteAllocations, allocs[i].ID).with({ Status: 'Posted', SAPMaterialDocument: res.MaterialDocument, SAPMaterialDocumentYear: res.MaterialDocumentYear,
-      SAPMaterialDocumentItem: res.Items?.[i]?.MaterialDocumentItem });
+      SAPMaterialDocumentItem: sapItem?.MaterialDocumentItem || null });
+  }
   await INSERT.into(PostingLogs).entries({ DailyClose_ID: close.ID, Scenario: 'NuclearWaste', IdempotencyKey: close.IdempotencyKey, Outcome: 'Success',
     Message: res.Message, SAPMaterialDocument: res.MaterialDocument, SAPMaterialDocumentYear: res.MaterialDocumentYear });
   return closeResult({ ...close, Status: 'Posted', SAPMaterialDocument: res.MaterialDocument, SAPMaterialDocumentYear: res.MaterialDocumentYear }, res.Message);
@@ -145,7 +172,7 @@ async function reverseWaste(dailyCloseId, reason) {
   const close = await SELECT.one.from(DailyCloses).where({ ID: dailyCloseId });
   if (!close || close.Status !== 'Posted') return closeResult(close, 'Only a posted NM Waste close can be reversed');
   const res = await getS4Api().reverseMaterialDocument({ MaterialDocument: close.SAPMaterialDocument, MaterialDocumentYear: close.SAPMaterialDocumentYear,
-    Reason: reason, IdempotencyKey: close.IdempotencyKey + ':REV' });
+    Reason: reason, IdempotencyKey: close.IdempotencyKey + ':REV', PostingScenario: 'NuclearWaste' });
   if (!res.success) return closeResult(close, res.Message);
   await INSERT.into(Reversals).entries({ Scope: 'Waste', DailyClose_ID: close.ID, OriginalDocument: close.SAPMaterialDocument, OriginalDocumentYear: close.SAPMaterialDocumentYear,
     ReversalDocument: res.MaterialDocument, ReversalDocumentYear: res.MaterialDocumentYear, Reason: reason });

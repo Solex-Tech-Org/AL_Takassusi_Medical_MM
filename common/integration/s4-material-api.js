@@ -140,11 +140,13 @@ class RemoteS4MaterialApi {
         const movementTypes = Array.isArray(config.goodsReceiptMovementTypes)
             ? config.goodsReceiptMovementTypes.map(type => String(type).trim()).filter(Boolean) : [];
         if (!movementTypes.length) return null;
-        const path = String(config.goodsReceiptItemsPath || '/A_MaterialDocumentItem').trim();
+        const itemsPath = String(config.goodsReceiptItemsPath || '/A_MaterialDocumentItem').trim();
+        const headerPath = String(config.goodsReceiptHeaderPath || '/A_MaterialDocumentHeader').trim();
         const quantityField = String(config.goodsReceiptQuantityField || 'QuantityInBaseUnit').trim();
         const dateField = String(config.goodsReceiptPostingDateField || 'PostingDate').trim();
         const date = dateOnly(serviceDate);
-        if (!path.startsWith('/') || path === '/' || !validFieldName(quantityField) || !validFieldName(dateField)
+        if (!itemsPath.startsWith('/') || itemsPath === '/' || !headerPath.startsWith('/') || headerPath === '/'
+            || !validFieldName(quantityField) || !validFieldName(dateField)
             || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
         const filters = [
             `Material eq '${escapeOData(material)}'`,
@@ -153,13 +155,30 @@ class RemoteS4MaterialApi {
             `Batch eq '${escapeOData(batch)}'`,
             "InventoryStockType eq '01'",
             "InventorySpecialStockType eq ''",
-            `${dateField} eq datetime'${date}T00:00:00'`,
             `(${movementTypes.map(type => `GoodsMovementType eq '${escapeOData(type)}'`).join(' or ')})`
         ].join(' and ');
         const items = await remoteRows(SERVICES.document,
-            `${path}?$filter=${encodeURIComponent(filters)}&$select=Material,Plant,StorageLocation,Batch,GoodsMovementType,${dateField},${quantityField},IsReversalMovementType&$format=json`);
-        return items.reduce((sum, item) => bool(item.IsReversalMovementType)
-            ? sum : sum + Math.max(0, Number(item[quantityField] || 0)), 0);
+            `${itemsPath}?$filter=${encodeURIComponent(filters)}&$select=MaterialDocumentYear,MaterialDocument,Material,Plant,StorageLocation,Batch,GoodsMovementType,InventoryStockType,InventorySpecialStockType,${quantityField},GoodsMovementIsCancelled&$format=json`);
+        const documents = new Map();
+        for (const item of items) {
+            if (item.MaterialDocumentYear == null || item.MaterialDocument == null) continue;
+            const key = `${item.MaterialDocumentYear}|${item.MaterialDocument}`;
+            if (!documents.has(key)) documents.set(key, {
+                year: item.MaterialDocumentYear,
+                document: item.MaterialDocument
+            });
+        }
+        const postingDates = new Map(await Promise.all([...documents].map(async ([key, document]) => {
+            const headerKey = `MaterialDocumentYear='${escapeOData(document.year)}',MaterialDocument='${escapeOData(document.document)}'`;
+            const headerRows = await remoteRows(SERVICES.document,
+                `${headerPath}(${headerKey})?$select=${dateField}&$format=json`);
+            return [key, dateOnly(headerRows[0]?.[dateField])];
+        })));
+        return items.reduce((sum, item) => {
+            const key = `${item.MaterialDocumentYear}|${item.MaterialDocument}`;
+            if (postingDates.get(key) !== date || bool(item.GoodsMovementIsCancelled)) return sum;
+            return sum + Math.max(0, Number(item[quantityField] || 0));
+        }, 0);
     }
 
     async listBatchStock(args) {
@@ -194,8 +213,6 @@ class RemoteS4MaterialApi {
                     EntryUnit: item.EntryUnit
                 };
                 if (item.Batch) row.Batch = item.Batch;
-                const costCenter = item.CostCenter || payload.CostCenter;
-                if (costCenter) row.CostCenter = costCenter;
                 const caseId = item.CaseId ?? payload.CaseId;
                 const hospital = item.Hospital ?? payload.Hospital;
                 const modality = item.Modality ?? payload.Modality;
@@ -257,7 +274,9 @@ class RemoteS4MaterialApi {
         };
         if (result.success && payload.CaseId) {
             try {
-                const existing = await this._findResultByCaseId(payload.CaseId);
+                const existing = await this._findResultByCaseId(payload.CaseId, {
+                    MaterialDocument: document, MaterialDocumentYear: year
+                });
                 if (existing?.MaterialDocument === document && existing?.MaterialDocumentYear === year) {
                     result.Items = existing.Items;
                 }
@@ -268,7 +287,7 @@ class RemoteS4MaterialApi {
         return result;
     }
 
-    async _findResultByCaseId(caseId) {
+    async _findResultByCaseId(caseId, expectedDocument) {
         const config = cfg();
         const path = String(config.goodsIssueCaseLookupPath || '').trim();
         const field = String(config.goodsIssueCaseLookupField || '').trim();
@@ -277,14 +296,15 @@ class RemoteS4MaterialApi {
         if (!path.startsWith('/') || !validFieldName(field)) throw new NotConfiguredError('S/4 material-document result lookup path or field is invalid');
         const filter = `${field} eq '${escapeOData(caseId)}'`;
         const separator = path.includes('?') ? '&' : '?';
-        const select = ['MaterialDocumentYear', 'MaterialDocument', 'MaterialDocumentItem', 'MaterialDocumentLine',
-            'GoodsMovementIsCancelled', 'ReversedMaterialDocument', field].join(',');
+        const select = ['MaterialDocumentYear', 'MaterialDocument', 'MaterialDocumentItem', 'Material', 'Plant',
+            'StorageLocation', 'Batch', 'GoodsMovementType', 'QuantityInBaseUnit', 'GoodsMovementIsCancelled', field].join(',');
         const rows = await remoteRows(SERVICES.document,
             `${path}${separator}$filter=${encodeURIComponent(filter)}&$select=${encodeURIComponent(select)}&$format=json`);
-        const activeRows = rows.filter(row => !bool(row.GoodsMovementIsCancelled)
-            && !/^0+$/.test(String(row.ReversedMaterialDocument || '').trim()));
+        const activeRows = rows.filter(row => !bool(row.GoodsMovementIsCancelled));
         const documents = new Map();
         for (const row of activeRows) {
+            if (expectedDocument && (String(row.MaterialDocument) !== String(expectedDocument.MaterialDocument)
+                || String(row.MaterialDocumentYear) !== String(expectedDocument.MaterialDocumentYear))) continue;
             const docKey = `${row.MaterialDocumentYear}/${row.MaterialDocument}`;
             if (!row.MaterialDocument || !row.MaterialDocumentYear) continue;
             if (!documents.has(docKey)) documents.set(docKey, []);
@@ -295,18 +315,30 @@ class RemoteS4MaterialApi {
         }
         const [docKey, items] = documents.entries().next().value || [];
         if (!docKey) return null;
-        items.sort((left, right) => Number(left.MaterialDocumentLine || 0) - Number(right.MaterialDocumentLine || 0));
+        items.sort((left, right) => Number(left.MaterialDocumentItem || 0) - Number(right.MaterialDocumentItem || 0));
         const [year, document] = docKey.split('/');
         return {
             success: true,
             MaterialDocument: document,
             MaterialDocumentYear: year,
-            Items: items.map(item => ({
-                MaterialDocumentLine: String(Number(item.MaterialDocumentLine || 0)).padStart(6, '0'),
-                MaterialDocumentItem: item.MaterialDocumentItem
-            })),
+            Items: items.map(item => ({ ...item, MaterialDocumentItem: String(item.MaterialDocumentItem || '') })),
             Message: `Existing SAP material document found by Case ID '${caseId}'`
         };
+    }
+
+    async findDocumentItems(document, year) {
+        const config = cfg();
+        const path = String(config.goodsIssueCaseLookupPath || '').trim();
+        const field = String(config.goodsIssueCaseLookupField || '').trim();
+        if (!path || !path.startsWith('/') || path === '/' || !validFieldName(field))
+            throw new NotConfiguredError('S/4 material-document result lookup is not configured');
+        const filter = `MaterialDocument eq '${escapeOData(document)}' and MaterialDocumentYear eq '${escapeOData(year)}'`;
+        const select = ['MaterialDocumentYear', 'MaterialDocument', 'MaterialDocumentItem', 'Material', 'Plant',
+            'StorageLocation', 'Batch', 'GoodsMovementType', 'QuantityInBaseUnit', 'GoodsMovementIsCancelled', field].join(',');
+        const rows = await remoteRows(SERVICES.document,
+            `${path}?$filter=${encodeURIComponent(filter)}&$select=${encodeURIComponent(select)}&$format=json`);
+        return rows.filter(row => !bool(row.GoodsMovementIsCancelled))
+            .sort((left, right) => Number(left.MaterialDocumentItem || 0) - Number(right.MaterialDocumentItem || 0));
     }
 
     async findResultByCaseId(_key, _scenario, caseId) {
@@ -389,6 +421,10 @@ class ConfiguredS4MaterialApi {
     getMaterialStock(args) { return this._reader().getMaterialStock(args); }
     findResultByCaseId(key, scenario, caseId) {
         return this._writer(scenario).findResultByCaseId(key, scenario, caseId);
+    }
+    findDocumentItems(document, year, scenario) {
+        const writer = this._writer(scenario);
+        return writer.findDocumentItems ? writer.findDocumentItems(document, year) : Promise.resolve([]);
     }
     postMaterialDocument(payload) { return this._writer(payload.PostingScenario).postMaterialDocument(payload); }
     reverseMaterialDocument(payload) { return this._writer(payload.PostingScenario).reverseMaterialDocument(payload); }

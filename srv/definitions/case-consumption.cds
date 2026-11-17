@@ -36,7 +36,7 @@ extend service MaterialConsumptionService {
         }
         where
             Status in (
-                'Received', 'Ready', 'Blocked', 'NeedsCorrection', 'Error'
+                'Received', 'Ready', 'Blocked', 'NeedsCorrection', 'Error', 'Posted'
             );
     @readonly
     @requires: 'authenticated-user'
@@ -83,5 +83,6 @@ extend service MaterialConsumptionService {
     action importCaseConsumption(dateFrom: Date, dateTo: Date, rows: many RisRow) returns CaseImportResult;
     action calculateNuclear(ids: many UUID)                                       returns many RowResult;
     action postSelected(ids: many UUID)                                           returns many RowResult;
+    action refreshSapDocumentItems()                                              returns many RowResult;
     action reversePrimary(ID: UUID, reason: String, repost: Boolean)              returns RowResult;
 }

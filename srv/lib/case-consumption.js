@@ -15,7 +15,11 @@ const slocApi = require('../../common/integration/s4-sloc-api');
 const E = () => cds.entities('aaml.mc');
 const cfg = () => cds.env.aaml || {};
 const OPEN = ['Received', 'Ready', 'Blocked', 'NeedsCorrection', 'Error'];
-const isUnconfirmedPost = row => row?.Status === 'Error' && /Do not retry until the document is checked in SAP/i.test(row.ErrorMessage || '');
+// An uncertain remote POST must stay out of recalculation and reposting until
+// SAP has been checked. Match the older warning text too, so existing blocked
+// rows created before this guard remain protected after deployment.
+const isUnconfirmedPost = row => ['Blocked', 'Error'].includes(row?.Status)
+    && /(?:SAP posting result could not be confirmed|Do not retry until the document is checked in SAP|No material document was found for this Case ID after an uncertain POST)/i.test(row.ErrorMessage || '');
 const fromCodeFields = row => row && ({ ...row, Hospital: row.Hospital_Code ?? row.Hospital, Modality: row.Modality_Code ?? row.Modality });
 const reject = (req, status, message) => {
     if (req) return req.reject(status, message);
@@ -29,6 +33,7 @@ const toCodeFields = row => {
 };
 const result = (row, message) => ({ ID: row.ID, CaseId: row.CaseId, Status: row.Status, Message: message ?? row.ErrorMessage,
     SAPMaterialDocument: row.SAPMaterialDocument, SAPMaterialDocumentYear: row.SAPMaterialDocumentYear, SAPMaterialDocumentItem: row.SAPMaterialDocumentItem });
+const serviceDateKey = value => value instanceof Date ? value.toISOString().slice(0, 10) : String(value || '').slice(0, 10);
 const isIsoServiceDate = value => {
     const date = String(value || '');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
@@ -379,96 +384,293 @@ async function calculateRows(ids) {
 async function postSelected(ids) {
     const { ConsumptionRequests, PostingLogs, BatchAllocations } = E();
     const s4 = getS4Api();
-    const out = [];
-    for (const id of ids) {
-        let row = await SELECT.one.from(ConsumptionRequests).where({ ID: id });
-        if (!row) { out.push({ ID: id, Status: 'NotFound', Message: 'Row not found' }); continue; }
-        if (row.Status === 'Posted' || row.SAPMaterialDocument) { out.push(result(row, 'Already posted - existing SAP result returned')); continue; }
-        row = await prepareRow(id);
-        if (row.Status !== 'Ready') { out.push(result(row)); continue; }
-        if (remotePostingEnabled(row.PostingScenario)
-            && (!String(row.Plant || '').trim() || !String(row.StorageLocation || '').trim())) {
-            const message = 'Remote posting requires one valid Plant and Storage Location from the Hospital/Modality mapping.';
-            await UPDATE(ConsumptionRequests, id).with({ Status: 'Blocked', ErrorMessage: message });
-            out.push(result({ ...row, Status: 'Blocked', ErrorMessage: message }));
+    const requestedIds = [...new Set(ids || [])];
+    const selectedRows = requestedIds.length
+        ? await SELECT.from(ConsumptionRequests).where({ ID: { in: requestedIds } }) : [];
+    const rowsById = new Map(selectedRows.map(row => [row.ID, fromCodeFields(row)]));
+    const resultById = new Map();
+    const byDate = new Map();
+    const alreadyPostedDates = new Set();
+
+    for (const id of requestedIds) {
+        const row = rowsById.get(id);
+        if (!row) { resultById.set(id, { ID: id, Status: 'NotFound', Message: 'Row not found' }); continue; }
+        if (row.Status === 'Posted' || row.SAPMaterialDocument) {
+            resultById.set(id, result(row, 'Already posted - existing SAP result returned'));
+            if (row.ServiceDate) alreadyPostedDates.add(serviceDateKey(row.ServiceDate));
             continue;
         }
-        const configIssues = getRemotePostingConfigIssues({ scenario: row.PostingScenario });
+        if (!row.ServiceDate) { resultById.set(id, result({ ...row, Status: 'Blocked' }, 'Service Date is required for daily posting')); continue; }
+        const date = serviceDateKey(row.ServiceDate);
+        if (!byDate.has(date)) byDate.set(date, []);
+        byDate.get(date).push(row);
+    }
+
+    const markGroup = async (rows, status, message, outcome) => {
+        const clean = String(message || '').slice(0, 500);
+        for (const row of rows) {
+            await UPDATE(ConsumptionRequests, row.ID).with({ Status: status, ErrorMessage: clean });
+            await INSERT.into(PostingLogs).entries({ Request_ID: row.ID, Scenario: row.PostingScenario,
+                IdempotencyKey: row.IdempotencyKey, Outcome: outcome, Message: clean });
+            resultById.set(row.ID, result({ ...row, Status: status, ErrorMessage: clean }, clean));
+        }
+    };
+
+    for (const [serviceDate, initiallySelected] of byDate) {
+        const allDateRows = await SELECT.from(ConsumptionRequests).where({ ServiceDate: serviceDate });
+        const activeDateRows = allDateRows.filter(row => !['Excluded', 'Reversed'].includes(row.Status));
+        const postedRows = activeDateRows.filter(row => row.Status === 'Posted' || row.SAPMaterialDocument);
+        if (postedRows.length) {
+            await markGroup(initiallySelected, 'Blocked',
+                `A primary material document already exists for ${serviceDate}. The remaining cases cannot be posted as a second daily document.`, 'BusinessError');
+            continue;
+        }
+
+        const selectedIds = new Set(initiallySelected.map(row => row.ID));
+        const missing = activeDateRows.filter(row => !selectedIds.has(row.ID));
+        if (missing.length) {
+            const message = `Select all ${activeDateRows.length} active cases for ${serviceDate} to create one primary material document for the day.`;
+            for (const row of initiallySelected) resultById.set(row.ID, result({ ...row, Status: 'Blocked' }, message));
+            continue;
+        }
+
+        await calculateRows(activeDateRows.map(row => row.ID));
+        const dayRows = (await SELECT.from(ConsumptionRequests).where({ ID: { in: activeDateRows.map(row => row.ID) } }))
+            .map(row => fromCodeFields(row));
+        if (dayRows.some(row => row.Status !== 'Ready')) {
+            for (const row of dayRows) resultById.set(row.ID, result(row));
+            continue;
+        }
+
+        const missingLocation = dayRows.find(row => remotePostingEnabled(row.PostingScenario)
+            && (!String(row.Plant || '').trim() || !String(row.StorageLocation || '').trim()));
+        if (missingLocation) {
+            await markGroup(dayRows, 'Blocked',
+                'Remote posting requires a valid Plant and Storage Location for every case in the daily document.', 'BusinessError');
+            continue;
+        }
+        const configIssues = dayRows.flatMap(row => getRemotePostingConfigIssues({ scenario: row.PostingScenario }));
         if (configIssues.length) {
-            const message = V.msg(configIssues).slice(0, 500);
-            await UPDATE(ConsumptionRequests, id).with({ Status: 'Blocked', ErrorMessage: message });
-            out.push(result({ ...row, Status: 'Blocked', ErrorMessage: message }));
+            await markGroup(dayRows, 'Blocked', V.msg(configIssues), 'BusinessError');
             continue;
         }
-        const movement = await SELECT.one.from(E().MovementTypeConfig).where({ Scenario: row.PostingScenario });
-        const allocations = await SELECT.from(BatchAllocations).where({ Request_ID: id }).orderBy('Sequence');
-        const lines = allocations.length
-            ? allocations.map(allocation => ({ quantity: allocation.Quantity ?? allocation.Vials, unit: allocation.Unit || row.PostingUnit,
-                batch: allocation.Batch, batchSource: row.BatchSource, costCenter: row.CostCenter }))
-            : [{ quantity: row.PostingQuantity ?? row.Quantity, unit: row.PostingUnit || row.EntryUnit,
-                costCenter: row.CostCenter }];
-        const body = payload.casePrimary(row, lines, movement);
+
+        const movementByScenario = new Map();
+        const planByRequest = new Map();
+        const itemPayloads = [];
+        for (const row of dayRows) {
+            if (!movementByScenario.has(row.PostingScenario)) {
+                movementByScenario.set(row.PostingScenario,
+                    await SELECT.one.from(E().MovementTypeConfig).where({ Scenario: row.PostingScenario }));
+            }
+            const movement = movementByScenario.get(row.PostingScenario);
+            const allocations = await SELECT.from(BatchAllocations).where({ Request_ID: row.ID }).orderBy('Sequence');
+            const planned = allocations.length ? allocations.map(allocation => ({ allocation,
+                quantity: allocation.Quantity ?? allocation.Vials, unit: allocation.Unit || row.PostingUnit, batch: allocation.Batch,
+                sled: allocation.ShelfLifeExpirationDate })) : [{ allocation: null,
+                quantity: row.PostingQuantity ?? row.Quantity, unit: row.PostingUnit || row.EntryUnit, batch: null, sled: null }];
+            const start = itemPayloads.length;
+            for (const line of planned) itemPayloads.push({
+                GoodsMovementType: movement.GoodsMovementType,
+                Material: row.Material, Plant: row.Plant, StorageLocation: row.StorageLocation,
+                Quantity: line.quantity, EntryUnit: line.unit, ...(line.batch ? { Batch: line.batch } : {}),
+                CaseId: row.CaseId, Hospital: row.Hospital, Modality: row.Modality
+            });
+            planByRequest.set(row.ID, { row, planned, start, count: planned.length });
+        }
+
+        const groupKey = payload.idempotencyKey(['CASE-DAY', serviceDate,
+            ...dayRows.map(row => `${row.ID}:${row.PostingVersion || 1}:${row.IdempotencyKey || ''}`).sort()]);
+        const scenario = dayRows.some(row => row.PostingScenario === 'NuclearConsumption') ? 'NuclearConsumption' : 'Normal';
+        const body = payload.dailyPrimary(serviceDate, itemPayloads, groupKey, scenario);
         let response;
         try {
             response = await s4.postMaterialDocument(body);
         } catch (error) {
             if (error instanceof NotConfiguredError) {
-                const message = error.message.slice(0, 500);
-                await UPDATE(ConsumptionRequests, id).with({ Status: 'Blocked', ErrorMessage: message });
-                out.push(result({ ...row, Status: 'Blocked', ErrorMessage: message }));
+                await markGroup(dayRows, 'Blocked', error.message, 'BusinessError');
                 continue;
             }
+            let confirmations = [];
             try {
-                response = await s4.findResultByCaseId(row.IdempotencyKey, row.PostingScenario, row.CaseId);
+                confirmations = await Promise.all(dayRows.map(row =>
+                    s4.findResultByCaseId(groupKey, row.PostingScenario, row.CaseId)));
             } catch (lookupError) {
-                const message = `SAP posting result could not be confirmed. The case is blocked to prevent a duplicate; check the Case ID in SAP before any retry. ${lookupError.message}`;
-                await UPDATE(ConsumptionRequests, id).with({ Status: 'Blocked', ErrorMessage: message.slice(0, 500) });
-                await INSERT.into(PostingLogs).entries({ Request_ID: id, Scenario: row.PostingScenario,
-                    IdempotencyKey: row.IdempotencyKey, Outcome: 'TechnicalError', Message: message.slice(0, 500) });
-                out.push(result({ ...row, Status: 'Blocked' }, message));
+                const message = `SAP posting result is uncertain. Do not retry until the daily document is checked in SAP. ${lookupError.message}`;
+                await markGroup(dayRows, 'Blocked', message, 'TechnicalError');
                 continue;
             }
-            if (!response) {
-                const message = 'No material document was found for this Case ID after an uncertain POST. The case is blocked; verify SAP before retrying.';
-                await UPDATE(ConsumptionRequests, id).with({ Status: 'Blocked', ErrorMessage: message });
-                await INSERT.into(PostingLogs).entries({ Request_ID: id, Scenario: row.PostingScenario,
-                    IdempotencyKey: row.IdempotencyKey, Outcome: 'TechnicalError', Message: `${error.message}; ${message}`.slice(0, 500) });
-                out.push(result({ ...row, Status: 'Blocked' }, message));
+            const confirmed = confirmations.filter(Boolean);
+            const docKeys = new Set(confirmed.map(item => `${item.MaterialDocumentYear}/${item.MaterialDocument}`));
+            if (confirmations.length === dayRows.length && confirmed.length === dayRows.length && docKeys.size === 1) {
+                response = { ...confirmed[0], success: true, Items: [], Message: 'Existing daily SAP material document confirmed by Case ID' };
+            } else {
+                const message = confirmed.length
+                    ? 'SAP posting result is uncertain and only some daily cases were found. The cases are blocked; verify the service date in SAP before retrying.'
+                    : 'No daily material document was found by Case ID after an uncertain POST. The cases are blocked; verify SAP before retrying.';
+                await markGroup(dayRows, 'Blocked', message, 'TechnicalError');
                 continue;
             }
         }
+
         if (!response?.success) {
-            const message = String(response?.Message || 'SAP rejected the goods issue').slice(0, 500);
-            await UPDATE(ConsumptionRequests, id).with({ Status: 'Error', ErrorMessage: message });
-            await INSERT.into(PostingLogs).entries({ Request_ID: id, Scenario: row.PostingScenario,
-                IdempotencyKey: row.IdempotencyKey, Outcome: 'BusinessError', Message: message });
-            out.push(result({ ...row, Status: 'Error' }, message));
+            await markGroup(dayRows, 'Error', response?.Message || 'SAP rejected the daily goods issue', 'BusinessError');
             continue;
         }
-        const returnedItems = response.Items || [];
-        const firstItem = returnedItems[0]?.MaterialDocumentItem || null;
-        await UPDATE(ConsumptionRequests, id).with({ Status: 'Posted', ErrorMessage: null,
-            SAPMaterialDocument: response.MaterialDocument, SAPMaterialDocumentYear: response.MaterialDocumentYear,
-            SAPMaterialDocumentItem: firstItem,
-            PrimaryDocumentReference: `${response.MaterialDocument}/${response.MaterialDocumentYear}/${firstItem || ''}` });
-        for (let index = 0; index < allocations.length; index++) {
-            const sapItem = returnedItems[index]?.MaterialDocumentItem;
-            await UPDATE(BatchAllocations, allocations[index].ID).with({ SAPMaterialDocument: response.MaterialDocument,
-                SAPMaterialDocumentYear: response.MaterialDocumentYear, SAPMaterialDocumentItem: sapItem || null });
+
+        let sapItems = response.Items || [];
+        if (!sapItems.length && remotePostingEnabled(scenario) && s4.findDocumentItems) {
+            try { sapItems = await s4.findDocumentItems(response.MaterialDocument, response.MaterialDocumentYear, scenario); }
+            catch (error) { log.warn('Could not read SAP item numbers for the posted daily document', { serviceDate, message: error.message }); }
         }
-        if (allocations.length) {
-            const details = allocations.map((allocation, index) => {
-                const quantity = calc.r(Number(allocation.Quantity ?? allocation.Vials)).toFixed(3);
-                const sled = allocation.ShelfLifeExpirationDate ? ` (SLED ${allocation.ShelfLifeExpirationDate})` : '';
-                const item = returnedItems[index]?.MaterialDocumentItem ? ` - SAP item ${returnedItems[index].MaterialDocumentItem}` : '';
-                return `${allocation.Batch}: ${quantity} ${allocation.Unit || row.PostingUnit}${sled}${item}`;
+        const caseField = String(cfg().s4?.goodsIssueCaseLookupField || 'YY1_CaseID_MMI');
+        const usedSapItems = new Set();
+        for (const row of dayRows) {
+            const plan = planByRequest.get(row.ID);
+            const assigned = [];
+            for (let offset = 0; offset < plan.count; offset++) {
+                const wanted = plan.planned[offset];
+                let sapItem;
+                if (response.Items?.length) {
+                    sapItem = response.Items[plan.start + offset] || null;
+                } else {
+                    const matchesLine = item => String(item.Material || '') === String(row.Material || '')
+                        && String(item.Batch || '') === String(wanted.batch || '')
+                        && (!Number.isFinite(Number(item.QuantityInBaseUnit))
+                            || Math.abs(Number(item.QuantityInBaseUnit) - Number(wanted.quantity)) < 0.0005);
+                    let index = sapItems.findIndex((item, itemIndex) => !usedSapItems.has(itemIndex)
+                        && String(item[caseField] || '') === String(row.CaseId || '') && matchesLine(item));
+                    if (index < 0) index = sapItems.findIndex((item, itemIndex) => !usedSapItems.has(itemIndex) && matchesLine(item));
+                    if (index >= 0) { usedSapItems.add(index); sapItem = sapItems[index]; }
+                }
+                assigned.push(sapItem?.MaterialDocumentItem ? String(sapItem.MaterialDocumentItem) : null);
+                if (wanted?.allocation) await UPDATE(BatchAllocations, wanted.allocation.ID).with({
+                    SAPMaterialDocument: response.MaterialDocument,
+                    SAPMaterialDocumentYear: response.MaterialDocumentYear,
+                    SAPMaterialDocumentItem: sapItem?.MaterialDocumentItem ? String(sapItem.MaterialDocumentItem) : null
+                });
+            }
+            const firstItem = assigned.find(Boolean) || null;
+            const batchDetails = plan.planned.filter(line => line.allocation).map((line, index) => {
+                const quantity = calc.r(Number(line.quantity)).toFixed(3);
+                const sled = line.sled ? ` (SLED ${line.sled})` : '';
+                const item = assigned[index] ? ` - SAP item ${assigned[index]}` : '';
+                return `${line.batch}: ${quantity} ${line.unit}${sled}${item}`;
             }).join('\n');
-            await UPDATE(ConsumptionRequests, id).with({ BatchDetails: details });
+            const itemWarning = assigned.some(item => !item)
+                ? 'SAP item number could not be read from the created document.' : null;
+            const message = [response.Message || 'SAP material document created successfully', itemWarning].filter(Boolean).join('. ');
+            await UPDATE(ConsumptionRequests, row.ID).with({ Status: 'Posted', ErrorMessage: itemWarning,
+                SAPMaterialDocument: response.MaterialDocument, SAPMaterialDocumentYear: response.MaterialDocumentYear,
+                SAPMaterialDocumentItem: firstItem, DailyGroupKey: serviceDate,
+                PrimaryDocumentReference: `${response.MaterialDocument}/${response.MaterialDocumentYear}/${firstItem || ''}`,
+                ...(plan.planned.some(line => line.allocation) ? { BatchDetails: batchDetails } : {}) });
+            await INSERT.into(PostingLogs).entries({ Request_ID: row.ID, Scenario: row.PostingScenario,
+                IdempotencyKey: groupKey, Outcome: 'Success', Message: message.slice(0, 500),
+                SAPMaterialDocument: response.MaterialDocument, SAPMaterialDocumentYear: response.MaterialDocumentYear });
+            resultById.set(row.ID, result({ ...row, Status: 'Posted', SAPMaterialDocument: response.MaterialDocument,
+                SAPMaterialDocumentYear: response.MaterialDocumentYear, SAPMaterialDocumentItem: firstItem }, message));
         }
-        await INSERT.into(PostingLogs).entries({ Request_ID: id, Scenario: row.PostingScenario,
-            IdempotencyKey: row.IdempotencyKey, Outcome: 'Success', Message: response.Message,
-            SAPMaterialDocument: response.MaterialDocument, SAPMaterialDocumentYear: response.MaterialDocumentYear });
-        out.push(result(await SELECT.one.from(ConsumptionRequests).where({ ID: id }), response.Message));
+
+        const nuclearRows = dayRows.filter(row => ['NuclearLiquid', 'NuclearPowder'].includes(row.MaterialClass));
+        if (nuclearRows.length) {
+            let wasteResult;
+            try { wasteResult = await require('./daily-close').executeDailyClose(serviceDate); }
+            catch (error) { wasteResult = { Status: 'Error', Message: error.message }; }
+            const wasteMessage = ['Posted', 'NoWaste'].includes(wasteResult?.Status)
+                ? `Daily waste: ${wasteResult.Status}${wasteResult.SAPMaterialDocument ? ` - ${wasteResult.SAPMaterialDocument}` : ''}`
+                : `Daily waste ${wasteResult?.Status || 'Error'}: ${wasteResult?.Message || 'could not be posted'}`;
+            for (const row of nuclearRows) {
+                const prior = resultById.get(row.ID);
+                if (prior) prior.Message = [prior.Message, wasteMessage].filter(Boolean).join('; ');
+            }
+        }
+    }
+
+    for (const serviceDate of alreadyPostedDates) {
+        const allDateRows = await SELECT.from(ConsumptionRequests).where({ ServiceDate: serviceDate });
+        const activeDateRows = allDateRows.filter(row => !['Excluded', 'Reversed'].includes(row.Status));
+        if (!activeDateRows.length || activeDateRows.some(row => row.Status !== 'Posted' || !row.SAPMaterialDocument)
+            || !activeDateRows.some(row => ['NuclearLiquid', 'NuclearPowder'].includes(row.MaterialClass))) continue;
+        let wasteResult;
+        try { wasteResult = await require('./daily-close').executeDailyClose(serviceDate); }
+        catch (error) { wasteResult = { Status: 'Error', Message: error.message }; }
+        const message = ['Posted', 'NoWaste'].includes(wasteResult?.Status)
+            ? `Daily waste: ${wasteResult.Status}${wasteResult.SAPMaterialDocument ? ` - ${wasteResult.SAPMaterialDocument}` : ''}`
+            : `Daily waste ${wasteResult?.Status || 'Error'}: ${wasteResult?.Message || 'could not be posted'}`;
+        for (const id of requestedIds) {
+            const row = rowsById.get(id);
+            if (row && serviceDateKey(row.ServiceDate) === serviceDate
+                && ['NuclearLiquid', 'NuclearPowder'].includes(row.MaterialClass)) {
+                const prior = resultById.get(id);
+                if (prior) prior.Message = [prior.Message, message].filter(Boolean).join('; ');
+            }
+        }
+    }
+
+    return requestedIds.map(id => resultById.get(id) || { ID: id, Status: 'NotFound', Message: 'Row not found' });
+}
+
+/** Backfill missing item numbers on already-posted cases from their exact SAP document. */
+async function refreshSapDocumentItems() {
+    const { ConsumptionRequests, BatchAllocations } = E();
+    const s4 = getS4Api();
+    const posted = await SELECT.from(ConsumptionRequests).where({ Status: 'Posted' });
+    const candidates = [];
+    for (const row of posted) {
+        if (!row.SAPMaterialDocument || !row.SAPMaterialDocumentYear || !remotePostingEnabled(row.PostingScenario)) continue;
+        const allocations = await SELECT.from(BatchAllocations).where({ Request_ID: row.ID }).orderBy('Sequence');
+        if (!row.SAPMaterialDocumentItem || allocations.some(allocation => !allocation.SAPMaterialDocumentItem))
+            candidates.push({ ...fromCodeFields(row), allocations });
+    }
+    const groups = new Map();
+    for (const row of candidates) {
+        const key = `${row.PostingScenario}|${row.SAPMaterialDocumentYear}|${row.SAPMaterialDocument}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(row);
+    }
+
+    const out = [];
+    const caseField = String(cfg().s4?.goodsIssueCaseLookupField || 'YY1_CaseID_MMI');
+    for (const rows of groups.values()) {
+        const first = rows[0];
+        let sapItems = [];
+        try { sapItems = await s4.findDocumentItems(first.SAPMaterialDocument, first.SAPMaterialDocumentYear, first.PostingScenario); }
+        catch (error) {
+            for (const row of rows) out.push(result(row, `Could not refresh SAP item numbers: ${error.message}`));
+            continue;
+        }
+        const used = new Set();
+        for (const row of rows) {
+            const planned = row.allocations.length ? row.allocations.map(allocation => ({ allocation, batch: allocation.Batch,
+                quantity: allocation.Quantity ?? allocation.Vials })) : [{ allocation: null, batch: null, quantity: row.PostingQuantity ?? row.Quantity }];
+            const itemNumbers = [];
+            for (const line of planned) {
+                const matches = item => String(item.Material || '') === String(row.Material || '')
+                    && String(item.Batch || '') === String(line.batch || '')
+                    && (!Number.isFinite(Number(item.QuantityInBaseUnit))
+                        || Math.abs(Number(item.QuantityInBaseUnit) - Number(line.quantity)) < 0.0005);
+                let index = sapItems.findIndex((item, i) => !used.has(i)
+                    && String(item[caseField] || '') === String(row.CaseId || '') && matches(item));
+                if (index < 0) index = sapItems.findIndex((item, i) => !used.has(i) && matches(item));
+                const item = index >= 0 ? sapItems[index] : null;
+                if (index >= 0) used.add(index);
+                const itemNumber = item?.MaterialDocumentItem ? String(item.MaterialDocumentItem) : null;
+                itemNumbers.push(itemNumber);
+                if (line.allocation) {
+                    await UPDATE(BatchAllocations, line.allocation.ID).with({ SAPMaterialDocument: row.SAPMaterialDocument,
+                        SAPMaterialDocumentYear: row.SAPMaterialDocumentYear, SAPMaterialDocumentItem: itemNumber });
+                }
+            }
+            const firstItem = itemNumbers.find(Boolean) || row.SAPMaterialDocumentItem;
+            if (firstItem !== row.SAPMaterialDocumentItem)
+                await UPDATE(ConsumptionRequests, row.ID).with({ SAPMaterialDocumentItem: firstItem,
+                    PrimaryDocumentReference: `${row.SAPMaterialDocument}/${row.SAPMaterialDocumentYear}/${firstItem || ''}` });
+            const refreshed = await SELECT.one.from(ConsumptionRequests).where({ ID: row.ID });
+            out.push(result(fromCodeFields(refreshed), itemNumbers.some(Boolean)
+                ? `SAP item numbers refreshed from document ${row.SAPMaterialDocument}`
+                : `No matching SAP item was found in document ${row.SAPMaterialDocument}`));
+        }
     }
     return out;
 }
@@ -515,5 +717,5 @@ async function determinePowderBatch({ material, hospital, modality, vials }) {
     return pick.allocations.map(item => ({ Batch: item.batch, ShelfLifeExpirationDate: item.shelfLifeExpirationDate, Vials: item.vials }));
 }
 
-module.exports = { receiveFromRis, prepareRow, calculateRows, postSelected, reversePrimary,
+module.exports = { receiveFromRis, prepareRow, calculateRows, postSelected, refreshSapDocumentItems, reversePrimary,
     determineLiquidBatch, determinePowderBatch, OPEN };

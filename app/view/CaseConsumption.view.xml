@@ -133,6 +133,10 @@
                   text="{i18n>statusReady}"/>
 
                 <core:Item
+                  key="Posted"
+                  text="{i18n>statusPosted}"/>
+
+                <core:Item
                   key="Blocked"
                   text="{i18n>statusBlocked}"/>
 
@@ -345,7 +349,7 @@
                     <ObjectStatus
                       class="aamlStatus"
                       text="{Status}"
-                      state="{path: 'Status', formatter: '.formatter.statusState'}"/>
+                      state="{path: 'Status', formatter: '.formatter.caseStatusState'}"/>
 
                     <Text
                       class="aamlWrap aamlMsg"
