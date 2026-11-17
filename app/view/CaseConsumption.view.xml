@@ -73,11 +73,15 @@
                 text="{i18n>filterHospital}"
                 labelFor="fHospital"/>
 
-              <Input
+              <Select
                 id="fHospital"
+                selectedKey="{view>/HospitalFilter}"
+                forceSelection="false"
                 width="100%"
-                submit=".onSearch"
-                liveChange=".onFilterInput"/>
+                change=".onFilterInput"
+                items="{view>/Hospitals}">
+                <core:Item key="{view>key}" text="{view>text}"/>
+              </Select>
             </VBox>
 
             <VBox class="aamlFilterField">
@@ -85,11 +89,15 @@
                 text="{i18n>filterModality}"
                 labelFor="fModality"/>
 
-              <Input
+              <Select
                 id="fModality"
+                selectedKey="{view>/ModalityFilter}"
+                forceSelection="false"
                 width="100%"
-                submit=".onSearch"
-                liveChange=".onFilterInput"/>
+                change=".onFilterInput"
+                items="{view>/Modalities}">
+                <core:Item key="{view>key}" text="{view>text}"/>
+              </Select>
             </VBox>
 
             <VBox class="aamlFilterField">
@@ -176,6 +184,14 @@
             <ToolbarSpacer/>
 
             <Button
+              text="{i18n>recalculate}"
+              icon="sap-icon://synchronize"
+              type="Transparent"
+              tooltip="{i18n>recalculate}"
+              press=".onRecalculate"
+              class="aamlBtnRecalculate"/>
+
+            <Button
               icon="sap-icon://refresh"
               type="Transparent"
               tooltip="{i18n>refresh}"
@@ -202,7 +218,7 @@
               items="{
                 path: '/CaseConsumption',
                 parameters: {
-                  $select: 'ID,CaseId,ServiceDate,Hospital,Modality,Material,MaterialDescription,MaterialClass,Quantity,EntryUnit,ActualMci,MaximumMciPerVial,CalculatedVials,Batch,EstimatedWaste,Plant,StorageLocation,Status,ErrorMessage'
+                  $select: 'ID,CaseId,ProcedureCode,RISMaterialCode,ServiceDate,Hospital,Modality,Material,MaterialDescription,MaterialClass,SAPProductType,Quantity,EntryUnit,ActualMci,PostingQuantity,PostingUnit,MaximumMciPerVial,CalculatedVials,Batch,BatchDetails,BatchExpiryDetails,EstimatedWaste,Plant,StorageLocation,Status,ErrorMessage'
                 },
                 sorter: [
                   { path: 'ServiceDate', descending: true },
@@ -229,11 +245,15 @@
                 </Column>
 
                 <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colRisMaterial}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
                   <Text text="{i18n>colClass}"/>
                 </Column>
 
                 <Column hAlign="Center" styleClass="aamlColCenter">
-                  <Text text="{i18n>colModel}"/>
+                  <Text text="{i18n>colSapMaterialType}"/>
                 </Column>
 
                 <Column hAlign="Center" styleClass="aamlColCenter">
@@ -254,6 +274,10 @@
 
                 <Column hAlign="Center" styleClass="aamlColCenter">
                   <Text text="{i18n>colBatch}"/>
+                </Column>
+
+                <Column hAlign="Center" styleClass="aamlColCenter">
+                  <Text text="{i18n>colExpiryDate}"/>
                 </Column>
 
                 <Column hAlign="Center" styleClass="aamlColCenter">
@@ -283,17 +307,18 @@
                     <Text text="{ServiceDate}"/>
 
                     <Text
-                      text="{parts: ['Hospital', 'Modality'], formatter: '.formatter.hospMod'}"/>
+                      text="{parts: [{path: 'Hospital'}, {path: 'Modality'}, {path: 'view>/Hospitals'}, {path: 'view>/Modalities'}], formatter: '.formatter.hospMod'}"/>
 
                     <ObjectIdentifier
                       title="{Material}"
                       text="{MaterialDescription}"/>
 
+                    <Text text="{RISMaterialCode}"/>
+
                     <Text
                       text="{path: 'MaterialClass', formatter: '.formatter.classText'}"/>
 
-                    <Text
-                      text="{path: 'MaterialClass', formatter: '.formatter.modelText'}"/>
+                    <Text text="{SAPProductType}"/>
 
                     <Text
                       text="{path: 'ActualMci', formatter: '.formatter.num3'}"/>
@@ -302,15 +327,17 @@
                       text="{path: 'MaximumMciPerVial', formatter: '.formatter.capacity'}"/>
 
                     <Text
-                      text="{parts: ['MaterialClass', 'Quantity', 'EntryUnit', 'ActualMci', 'MaximumMciPerVial', 'CalculatedVials'], formatter: '.formatter.postingQty'}"/>
+                      text="{parts: ['MaterialClass', 'Quantity', 'EntryUnit', 'ActualMci', 'MaximumMciPerVial', 'CalculatedVials', 'PostingQuantity', 'PostingUnit'], formatter: '.formatter.postingQty'}"/>
 
                     <Text
                       text="{parts: ['Plant', 'StorageLocation'], formatter: '.formatter.plantSloc'}"/>
 
-                    <Text text="{Batch}"/>
+                    <Text text="{BatchDetails}" wrapping="true"/>
+
+                    <Text text="{BatchExpiryDetails}" wrapping="true"/>
 
                     <Text
-                      text="{path: 'MaterialClass', formatter: '.formatter.batchRule'}"/>
+                      text="{parts: ['MaterialClass', 'Batch'], formatter: '.formatter.batchRule'}"/>
 
                     <Text
                       text="{parts: ['MaterialClass', 'EstimatedWaste'], formatter: '.formatter.waste'}"/>

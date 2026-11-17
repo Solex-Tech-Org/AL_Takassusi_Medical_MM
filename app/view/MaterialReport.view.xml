@@ -28,11 +28,15 @@
                   </VBox>
                   <VBox class="aamlFilterField">
                     <Label text="{i18n>filterHospital}" labelFor="rHospital"/>
-                    <Input id="rHospital" width="100%" submit=".onFilter"/>
+                    <Select id="rHospital" selectedKey="{view>/HospitalFilter}" forceSelection="false" width="100%" change=".onFilter" items="{view>/Hospitals}">
+                      <core:Item key="{view>key}" text="{view>text}"/>
+                    </Select>
                   </VBox>
                   <VBox class="aamlFilterField">
                     <Label text="{i18n>filterModality}" labelFor="rModality"/>
-                    <Input id="rModality" width="100%" submit=".onFilter"/>
+                    <Select id="rModality" selectedKey="{view>/ModalityFilter}" forceSelection="false" width="100%" change=".onFilter" items="{view>/Modalities}">
+                      <core:Item key="{view>key}" text="{view>text}"/>
+                    </Select>
                   </VBox>
                   <VBox class="aamlFilterField">
                     <Label text="{i18n>filterCaseId}" labelFor="rCase"/>

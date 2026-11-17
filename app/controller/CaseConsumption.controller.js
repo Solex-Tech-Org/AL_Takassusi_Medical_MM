@@ -16,8 +16,27 @@ sap.ui.define([
             this._itemsInfo.templateShareable = true; // عشان الـ template ما يتمسحش لما نفك الـ binding
             table.unbindItems();
 
+            this._loadCodeLists();
             this._syncSelection();
             this.getOwnerComponent().getRouter().getRoute("caseConsumption").attachPatternMatched(this._onMatched, this);
+        },
+
+        _loadCodeLists: async function () {
+            try {
+                const model = this.getODataModel();
+                const [hospitalContexts, modalityContexts] = await Promise.all([
+                    model.bindList("/Hospitals").requestContexts(0, 500),
+                    model.bindList("/Modalities").requestContexts(0, 500)
+                ]);
+                const options = contexts => contexts.map(context => context.getObject())
+                    .sort((a, b) => Number(a.SortOrder || 0) - Number(b.SortOrder || 0))
+                    .map(row => {
+                    return { key: row.Code, text: `${row.Code} - ${row.Description}` };
+                });
+                const vm = this.getView().getModel("view");
+                vm.setProperty("/Hospitals", options(hospitalContexts));
+                vm.setProperty("/Modalities", options(modalityContexts));
+            } catch (e) { this.showError(e); }
         },
 
         /* =========================================================
@@ -49,6 +68,7 @@ sap.ui.define([
             this._clearSelection();
             this.byId("caseTable").unbindItems();
             this._applyFilters();
+            await this._recalculatePeriodRows(false);
         },
 
         /** زرار Back (فوق على اليمين) والسهم اللي في كارت الفلاتر: الرجوع لسجل المعاملات (الأرقام بتتحدّث بعد أي Post). */
@@ -74,12 +94,14 @@ sap.ui.define([
             });
         },
 
-        /** كتابة في خانة / تغيير الـ Status: بس بيحدّث حالة زرار Clear (الفلتر نفسه بيتطبق بـ Go أو Enter). */
+        /** تغيير اختيار الفلاتر: يحدّث حالة زرار Clear (الفلتر نفسه بيتطبق بـ Go). */
         onFilterInput: function () { this._updateCanClearFilters(); },
 
         /** Clear يتفعّل لو أي فلتر فيه قيمة. */
         _updateCanClearFilters: function () {
-            const has = ["fHospital", "fModality", "fMaterial"].some(id => !!(this.byId(id).getValue() || "").trim())
+            const has = !!this.byId("fHospital").getSelectedKey()
+                || !!this.byId("fModality").getSelectedKey()
+                || !!(this.byId("fMaterial").getValue() || "").trim()
                 || !!this.byId("fStatus").getSelectedKey();
             this.getView().getModel("view").setProperty("/canClearFilters", has);
         },
@@ -103,21 +125,22 @@ sap.ui.define([
         },
 
         _resetFilterFields: function () {
-            ["fHospital", "fModality", "fMaterial"].forEach(id => this.byId(id).setValue(""));
+            this.byId("fHospital").setSelectedKey("");
+            this.byId("fModality").setSelectedKey("");
+            this.byId("fMaterial").setValue("");
             this.byId("fStatus").setSelectedKey("");
             this._updateCanClearFilters();
         },
 
-        /** الفترة (إجبارية) + باقي الفلاتر (اختيارية) مع بعض بـ AND. Input بيتقرا بـ getValue() و Select بـ getSelectedKey(). */
+        /** الفترة (إجبارية) + باقي الفلاتر (اختيارية) مع بعض بـ AND. */
         _applyFilters: function () {
             const filters = [new Filter("ServiceDate", FO.BT, this._from, this._to)];
-            const text = id => (this.byId(id).getValue() || "").trim();
 
-            const hospital = text("fHospital");
+            const hospital = this.byId("fHospital").getSelectedKey();
             if (hospital) { filters.push(new Filter("Hospital", FO.EQ, hospital)); }
-            const modality = text("fModality");
+            const modality = this.byId("fModality").getSelectedKey();
             if (modality) { filters.push(new Filter("Modality", FO.EQ, modality)); }
-            const material = text("fMaterial");
+            const material = (this.byId("fMaterial").getValue() || "").trim();
             if (material) {
                 // كود الخامة أو الوصف يحتوي على النص المكتوب
                 filters.push(new Filter({
@@ -136,6 +159,32 @@ sap.ui.define([
             this._clearSelection();
             const binding = this.byId("caseTable").getBinding("items");
             if (binding) { binding.refresh(); }
+        },
+
+        /** Refresh allocation for every unposted case in the active transaction period. */
+        onRecalculate: function () { return this._recalculatePeriodRows(true); },
+
+        _recalculatePeriodRows: async function (notify) {
+            const vm = this.getView().getModel("view");
+            vm.setProperty("/busy", true);
+            let binding;
+            try {
+                binding = this.getODataModel().bindList("/CaseConsumption", undefined, undefined,
+                    [new Filter("ServiceDate", FO.BT, this._from, this._to)]);
+                const contexts = await binding.requestContexts(0, 5000);
+                const ids = contexts.map(context => context.getProperty("ID")).filter(Boolean);
+                if (ids.length) {
+                    await this.callAction("calculateNuclear", { ids: ids });
+                    const tableBinding = this.byId("caseTable").getBinding("items");
+                    if (tableBinding) { tableBinding.refresh(); }
+                }
+                if (notify) { MessageToast.show(this.getText("recalculateComplete", [ids.length])); }
+            } catch (e) {
+                this.showError(e);
+            } finally {
+                if (binding) { binding.destroy(); }
+                vm.setProperty("/busy", false);
+            }
         },
 
         /** Table title shows the total, e.g. "Cases (24)". وبنزامن عداد الاختيار لأن التحديث ممكن يغيّر الصفوف. */

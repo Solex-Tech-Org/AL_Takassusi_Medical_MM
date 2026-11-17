@@ -7,14 +7,15 @@
  * - first non-empty candidate in the list wins until confirmed.
  */
 const SOURCE_FIELDS = {
-    CaseId: ['CaseId', 'PROCEDURE_KEY'],
+    CaseId: ['CaseId', 'Case ID', 'PROCEDURE_KEY'],
     SourceRecordId: ['SourceRecordId'],            // final RIS field to confirm
-    ProcedureCode: ['ProcedureCode', 'PROCEDURE_CODE'],
-    Material: ['Material'],
-    ServiceDateTime: ['ServiceDateTime', 'PROCEDURE_END'],
-    Hospital: ['Hospital', 'Scan_Hospital'],
-    Modality: ['Modality'],
-    Quantity: ['Quantity'], EntryUnit: ['EntryUnit'], ActualMci: ['ActualMci'],
+    ProcedureCode: ['ProcedureCode', 'Procedure Code', 'PROCEDURE_CODE'],
+    RISMaterialCode: ['RISMaterialCode', 'RIS Material Code', 'Material Code', 'MaterialCode', 'RIS_MATERIAL_CODE', 'MATERIAL_CODE', 'Material'],
+    ServiceDate: ['ServiceDate', 'Service Date'],
+    ServiceDateTime: ['ServiceDateTime', 'Service Date Time', 'PROCEDURE_END'],
+    Hospital: ['Hospital', 'Hospital Code', 'Scan_Hospital'],
+    Modality: ['Modality', 'Modality Code'],
+    Quantity: ['Quantity'], EntryUnit: ['EntryUnit', 'Entry Unit', 'UOM', 'Unit'], ActualMci: ['ActualMci', 'Actual mCi'],
     Action: ['Action'], Version: ['Version'], SourceTimestamp: ['SourceTimestamp'], CorrelationId: ['CorrelationId']
 };
 const pick = (raw, names) => { for (const n of names) if (raw[n] !== undefined && raw[n] !== null && raw[n] !== '') return raw[n]; };
@@ -28,7 +29,7 @@ function toServiceDate(ts, tz = 'UTC') {
 function normalizeRisRow(raw, tz) {
     const row = {}; const events = [];
     for (const [k, names] of Object.entries(SOURCE_FIELDS)) { const v = pick(raw, names); if (v !== undefined) row[k] = v; }
-    row.ServiceDate = toServiceDate(row.ServiceDateTime, tz);
+    row.ServiceDate = toServiceDate(row.ServiceDateTime, tz) || row.ServiceDate;
     row.Action = row.Action || 'Create';
     row.Version = Number(row.Version || 1);
     if (raw.Batch) events.push({ Source: 'RIS', Code: 'BATCH_IGNORED', Message: `Batch '${raw.Batch}' received from RIS was ignored; the system determines the batch` });

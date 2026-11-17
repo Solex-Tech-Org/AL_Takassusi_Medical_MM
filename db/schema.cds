@@ -21,6 +21,7 @@ type RowStatus       : String(20) enum {
     Received;
     Ready;
     Blocked;
+    Error;
     NeedsCorrection;
     Posted;
     Excluded;
@@ -54,13 +55,16 @@ entity ConsumptionRequests : cuid, managed {
     CaseId                   : String(40) @mandatory;
     SourceRecordId           : String(80) @mandatory;
     ProcedureCode            : String(40);
+    RISMaterialCode          : String(40);
     ServiceDateTime          : Timestamp;
     ServiceDate              : Date;
-    Hospital                 : String(20);
-    Modality                 : String(20);
+    Hospital                 : Association to Hospitals;
+    Modality                 : Association to Modalities;
     Quantity                 : Qty;
     EntryUnit                : String(10);
     ActualMci                : Qty;
+    PostingQuantity          : Qty;
+    PostingUnit              : String(10);
     // --- determined / calculated (user-facing, read-only) ---
     Material                 : String(40);
     MaterialDescription      : String(120);
@@ -69,6 +73,7 @@ entity ConsumptionRequests : cuid, managed {
     MaximumMciPerVial        : Qty;
     CalculatedVials          : Qty;
     Batch                    : String(60);
+    BatchDetails             : String(1000);
     BatchSource              : String(20); // LIQUID_EXACT_DATE | FEFO
     EstimatedWaste           : Qty; // Powder estimate; Liquid = "At close"
     Plant                    : String(10);
@@ -94,6 +99,8 @@ entity ConsumptionRequests : cuid, managed {
     Version                  : Integer default 1; // RIS version (ordering)
     SourceTimestamp          : Timestamp;
     PostingVersion           : Integer default 1; // bumped after reversal -> new idempotency key
+    SAPProductType           : String(10); // raw A_Product.ProductType from S/4
+    BatchExpiryDetails       : String(1000); // S/4 SLED per selected batch
     BatchAllocations         : Composition of many BatchAllocations
                                    on BatchAllocations.Request = $self;
     PostingLogs              : Composition of many PostingLogs
@@ -108,8 +115,13 @@ entity BatchAllocations : cuid {
     Sequence                : Integer;
     Batch                   : String(40);
     ShelfLifeExpirationDate : Date;
+    Quantity                : Qty;
+    Unit                    : String(10);
     Vials                   : Qty;
     Mci                     : Qty;
+    SAPMaterialDocument     : String(10);
+    SAPMaterialDocumentYear : String(4);
+    SAPMaterialDocumentItem : String(6);
 }
 
 entity ValidationEvents : cuid, managed {
@@ -136,7 +148,10 @@ entity PostingLogs : cuid, managed {
 // Consumption session = "معاملة سابقة": كل مرة اليوزر يعمل Create ويحدد From/To
 // (الأرقام: إجمالي / اتعمله Post / المتبقي بتتحسب وقت القراءة من ConsumptionRequests)
 // ---------------------------------------------------------------
-@assert.unique: {Period: [DateFrom, DateTo]}
+@assert.unique: {Period: [
+    DateFrom,
+    DateTo
+]}
 entity ConsumptionSessions : cuid, managed {
     SessionNo : String(20); // CS-0001 ...
     DateFrom  : Date;
@@ -162,8 +177,8 @@ entity WasteAllocations : cuid {
     DailyClose               : Association to DailyCloses;
     Request                  : Association to ConsumptionRequests;
     CaseId                   : String(40);
-    Hospital                 : String(20);
-    Modality                 : String(20);
+    Hospital                 : Association to Hospitals;
+    Modality                 : Association to Modalities;
     Material                 : String(40);
     Plant                    : String(10);
     StorageLocation          : String(10);
@@ -197,8 +212,8 @@ entity Reversals : cuid, managed {
 @assert.unique: {Idempotency: [IdempotencyKey]}
 entity SharedConsumptions : cuid, managed {
     PostingDate             : Date;
-    Hospital                : String(20);
-    Modality                : String(20);
+    Hospital                : Association to Hospitals;
+    Modality                : Association to Modalities;
     Plant                   : String(10);
     StorageLocation         : String(10);
     CostCenter              : String(20);
@@ -229,9 +244,14 @@ entity SharedConsumptionItems : cuid {
 // via the integration layer. Local tables = replaceable staging/config.
 entity MaterialMaster {
     key Material      : String(40);
+        ProductOldID  : String(40);
         Description   : String(120);
         MaterialType  : String(20); // Normal | Nuclear | Nursing
         NuclearModel  : NuclearModel; // mandatory when MaterialType = Nuclear
+        ProductType   : String(10);
+        IsBatchManagementRequired : Boolean default false;
+        TotalShelfLife : Decimal(10, 3);
+        ShelfLifeExpirationDatePeriod : String(3);
         BaseUnit      : String(10);
         MaxMciPerVial : Qty;
         Active        : Boolean default true;
@@ -243,13 +263,39 @@ entity ProcedureMaterialMap {
 }
 
 entity HospitalModalityMap : cuid {
-    Hospital        : String(20);
-    Modality        : String(20);
+    Hospital        : Association to Hospitals;
+    Modality        : Association to Modalities;
     Plant           : String(10);
     StorageLocation : String(10);
     CostCenter      : String(20);
     CopaAssignment  : String(60); // PLACEHOLDER: real CO-PA characteristics not in FSD
     Active          : Boolean default true;
+}
+
+// Retain the legacy table in existing PostgreSQL deployments. The live schema
+// still contains it, so schema evolution must not try to drop it automatically.
+@cds.persistence.exists
+entity ModalityProcessCenterMappings {
+    key Modality      : String(20);
+    key ProcessCenter : String(20);
+}
+
+// Code lists used by inbound data and application value helps.
+entity Hospitals {
+    key Code        : String(20);
+        Description : String(120);
+}
+
+entity Modalities {
+    key Code        : String(20);
+        Description : String(120);
+        SortOrder   : Integer;
+}
+
+// A mapping is a modality/process-center pair; composite keys allow multiple centers per modality.
+entity ModalityProfitCenterMappings {
+    key Modality     : String(20) @mandatory;
+    key ProfitCenter : String(20) @mandatory;
 }
 
 entity MovementTypeConfig {
@@ -268,4 +314,10 @@ entity BatchStockSnapshot : cuid {
     UnrestrictedQty         : Qty;
     ReceivedQty             : Qty;
     ShelfLifeExpirationDate : Date;
+    BatchAvailabilityDate   : Date;
+    MatlBatchIsInRstrcdUseStock : Boolean default false;
+    BatchIsMarkedForDeletion : Boolean default false;
+    BatchPlantIsMarkedForDeletion : Boolean default false;
+    InventoryStockType      : String(2) default '01';
+    InventorySpecialStockType : String(1);
 }

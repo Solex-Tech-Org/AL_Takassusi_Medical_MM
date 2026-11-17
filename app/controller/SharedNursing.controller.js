@@ -10,12 +10,18 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/m
                 const vm = models.createSharedModel();
                 this.getView().setModel(vm, "view");
                 try {
-                    const ctxs = await this.getODataModel().bindList("/HospitalModalities").requestContexts(0, 500);
-                    const rows = ctxs.map(c => c.getObject());
-                    vm.setProperty("/Pairs", rows);
-                    const hs = [...new Set(rows.map(r => r.Hospital))];
-                    vm.setProperty("/Hospitals", hs.map(key => ({ key })));
-                    if (hs.length === 1) { vm.setProperty("/Hospital", hs[0]); this.onHospitalChange(); }
+                    const model = this.getODataModel();
+                    const [hospitalContexts, modalityContexts] = await Promise.all([
+                        model.bindList("/Hospitals").requestContexts(0, 500),
+                        model.bindList("/Modalities").requestContexts(0, 500)
+                    ]);
+                    const options = contexts => contexts.map(context => context.getObject())
+                        .sort((a, b) => Number(a.SortOrder || 0) - Number(b.SortOrder || 0))
+                        .map(row => {
+                        return { key: row.Code, text: `${row.Code} - ${row.Description}` };
+                    });
+                    vm.setProperty("/Hospitals", options(hospitalContexts));
+                    vm.setProperty("/Modalities", options(modalityContexts));
                 } catch (e) { this.showError(e); }
             },
             _vm: function () { return this.getView().getModel("view"); },
@@ -24,10 +30,7 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/m
                 const vm = this._vm(), hosp = vm.getProperty("/Hospital");
                 if (hosp === this._lastHospital) return;        // نفس القيمة: مفيش داعي نفضّي الجدول
                 this._lastHospital = hosp;
-                const ms = [...new Set(vm.getProperty("/Pairs").filter(p => p.Hospital === hosp).map(p => p.Modality))];
-                vm.setProperty("/Modalities", ms.map(key => ({ key })));
                 vm.setProperty("/Modality", ""); this._lastModality = ""; this._reset();
-                if (ms.length === 1) { vm.setProperty("/Modality", ms[0]); this.onModalityChange(); }   // single option -> auto-select
             },
             onModalityChange: async function () {
                 const vm = this._vm();

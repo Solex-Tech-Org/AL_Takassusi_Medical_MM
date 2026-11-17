@@ -5,26 +5,29 @@ description: "A simple CAP project."
 parameters:
   enable-parallel-deployments: false
   deploy_mode: html5-repo
+
 build-parameters:
   before-all:
     - builder: custom
       commands:
-        - npm ci
+        - npm install --no-audit --no-fund
+        - npm run build:styles
         - npx cds build --production
-        - cp -r common gen/srv/common
-        - rm -rf .deploy/app-router/resources
-        - cp -r app .deploy/app-router/resources
+        - node scripts/prepare-mta.js
+
 modules:
   - name: AL_Takassusi_Medical_MM-srv
     type: nodejs
     path: gen/srv
+    properties:
+      NODE_ENV: production
     parameters:
       instances: 1
       memory: 512M
       disk-quota: 1G
       buildpack: nodejs_buildpack
     build-parameters:
-      builder: npm-ci
+      builder: npm
     requires:
       - name: AL_Takassusi_Medical_MM-postgres
       - name: AL_Takassusi_Medical_MM-auth
@@ -47,6 +50,7 @@ modules:
           command: npm start
     requires:
       - name: AL_Takassusi_Medical_MM-postgres
+
   - name: AL_Takassusi_Medical_MM
     type: approuter.nodejs
     path: .deploy/app-router
@@ -76,6 +80,7 @@ resources:
     parameters:
       service: postgresql-db
       service-plan: standard
+
   - name: AL_Takassusi_Medical_MM-auth
     type: org.cloudfoundry.managed-service
     parameters:
@@ -93,6 +98,7 @@ resources:
             - https://*~{app-api/app-uri}/**
     requires:
       - name: app-api
+
   - name: AL_Takassusi_Medical_MM-destination
     type: org.cloudfoundry.managed-service
     parameters:
@@ -104,6 +110,7 @@ resources:
     parameters:
       service: html5-apps-repo
       service-plan: app-host
+
   - name: AL_Takassusi_Medical_MM-html5-runtime
     type: org.cloudfoundry.managed-service
     parameters:

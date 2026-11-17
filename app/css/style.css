@@ -3020,4 +3020,293 @@ html {
   text-overflow: clip !important;
 }
 
-/*# sourceMappingURL=style.css.map */
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent) {
+  flex: 0 0 auto !important;
+  width: max-content !important;
+  min-width: 10.5rem !important;
+  max-width: none !important;
+  height: 2.15rem !important;
+  min-height: 2.15rem !important;
+  margin-inline: 0.35rem !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnInner,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent) .sapMBtnInner {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: 100% !important;
+  box-sizing: border-box;
+  overflow: visible !important;
+  padding-inline: 0.75rem !important;
+  border: 1px solid rgba(11, 92, 171, 0.28) !important;
+  border-radius: 999px !important;
+  background: rgba(11, 92, 171, 0.07) !important;
+  color: #08417a !important;
+  white-space: nowrap;
+  box-shadow: none !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnIcon,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent) .sapMBtnIcon {
+  position: static !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  display: inline-flex !important;
+  flex: 0 0 auto;
+  margin: 0 !important;
+  color: #0b5cab !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnContent,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent) .sapMBtnContent {
+  flex: 0 0 auto;
+  line-height: 1.2;
+  max-width: none !important;
+  overflow: visible !important;
+  color: inherit !important;
+  white-space: nowrap;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate:hover .sapMBtnInner,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnInner.sapMBtnHoverable:hover,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent):hover .sapMBtnInner,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent) .sapMBtnInner.sapMBtnHoverable:hover {
+  border-color: #0b5cab !important;
+  background: rgba(11, 92, 171, 0.13) !important;
+  color: #08417a !important;
+  box-shadow: 0 2px 6px rgba(11, 92, 171, 0.16) !important;
+}
+
+@media (max-width: 600px) {
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate,
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent) {
+    width: 2.15rem !important;
+    min-width: 2.15rem !important;
+  }
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnInner,
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent) .sapMBtnInner {
+    width: 2.15rem !important;
+    padding-inline: 0 !important;
+  }
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnIcon,
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent) .sapMBtnIcon {
+    margin-inline-end: 0 !important;
+  }
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnContent,
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn:has(.sapMBtnContent) .sapMBtnContent {
+    display: none !important;
+  }
+}
+.app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+.app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) .sapMBtn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 2.25rem !important;
+  min-width: 2.25rem !important;
+  height: 2.25rem !important;
+  min-height: 2.25rem !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  vertical-align: middle !important;
+}
+.app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) .sapMBtn .sapMBtnInner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) .sapMBtn .sapMBtnIcon {
+  position: static !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  color: #b91c1c !important;
+}
+.app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) .sapMBtn:hover .sapMBtnInner,
+.app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) .sapMBtn .sapMBtnInner.sapMBtnHoverable:hover {
+  background: rgba(220, 38, 38, 0.1) !important;
+}
+.app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) .sapMBtn:active .sapMBtnInner,
+.app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) .sapMBtn .sapMBtnInner.sapMBtnActive {
+  background: rgba(220, 38, 38, 0.18) !important;
+  transform: scale(0.92);
+}
+.app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) .sapMBtn.sapMBtnDisabled {
+  cursor: default !important;
+  opacity: 0.4;
+}
+
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate {
+  cursor: pointer !important;
+  touch-action: manipulation;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnInner {
+  transform: translateY(0) scale(1);
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate:hover .sapMBtnInner,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnInner.sapMBtnHoverable:hover {
+  transform: translateY(-1px);
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate:active .sapMBtnInner,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnInner.sapMBtnActive {
+  border-color: #08417a !important;
+  background: rgba(11, 92, 171, 0.2) !important;
+  box-shadow: inset 0 1px 2px rgba(8, 65, 122, 0.18) !important;
+  transform: translateY(1px) scale(0.98);
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate.sapMBtnDisabled {
+  cursor: default !important;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-page .aamlTable[id$="--sessionsTable"] tbody > tr > td:has(.sapMBtn) .sapMBtn .sapMBtnInner,
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn.aamlBtnRecalculate .sapMBtnInner {
+    transition: none !important;
+  }
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td:has(> .sapMBtn:not(.aamlDeleteBtn)) {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td:has(> .sapMBtn:not(.aamlDeleteBtn)) > .sapMBtn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 2.25rem !important;
+  min-width: 2.25rem !important;
+  height: 2.25rem !important;
+  min-height: 2.25rem !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td:has(> .sapMBtn:not(.aamlDeleteBtn)) > .sapMBtn .sapMBtnInner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td:has(> .sapMBtn:not(.aamlDeleteBtn)) > .sapMBtn .sapMBtnContent,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td:has(> .sapMBtn:not(.aamlDeleteBtn)) > .sapMBtn .sapMBtnIcon,
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td:has(> .sapMBtn:not(.aamlDeleteBtn)) > .sapMBtn .sapMBtnIcon.sapUiIcon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  color: #b91c1c !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td:has(> .sapMBtn:not(.aamlDeleteBtn)) > .sapMBtn:hover .sapMBtnInner {
+  background: rgba(220, 38, 38, 0.1) !important;
+}
+.app-page .aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable.aamlTable tbody > tr > td:has(> .sapMBtn:not(.aamlDeleteBtn)) > .sapMBtn:active .sapMBtnInner {
+  background: rgba(220, 38, 38, 0.2) !important;
+  transform: scale(0.9);
+}
+
+@keyframes aamlRecalcPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(11, 92, 171, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(11, 92, 171, 0);
+  }
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent) {
+  cursor: pointer !important;
+  touch-action: manipulation;
+  user-select: none;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate .sapMBtnInner, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent) .sapMBtnInner {
+  transition: background-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.15s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate .sapMBtnIcon, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent) .sapMBtnIcon {
+  transform: rotate(0deg) !important;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), color 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate:hover .sapMBtnInner, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent):hover .sapMBtnInner {
+  transform: translateY(-1px);
+  border-color: #0b5cab !important;
+  background: rgba(11, 92, 171, 0.13) !important;
+  box-shadow: 0 3px 8px rgba(11, 92, 171, 0.2) !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate:hover .sapMBtnIcon, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent):hover .sapMBtnIcon {
+  transform: rotate(180deg) !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate:active .sapMBtnInner,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate .sapMBtnInner.sapMBtnActive, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent):active .sapMBtnInner,
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent) .sapMBtnInner.sapMBtnActive {
+  background: #0b5cab !important;
+  border-color: #08417a !important;
+  color: #ffffff !important;
+  transform: translateY(1px) scale(0.96);
+  box-shadow: inset 0 2px 4px rgba(8, 65, 122, 0.35) !important;
+  animation: aamlRecalcPulse 0.45s ease-out;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate:active .sapMBtnContent, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate:active .sapMBtnIcon, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent):active .sapMBtnContent, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent):active .sapMBtnIcon {
+  color: #ffffff !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate:active .sapMBtnIcon, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent):active .sapMBtnIcon {
+  transform: rotate(360deg) !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate:focus-visible .sapMBtnInner, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent):focus-visible .sapMBtnInner {
+  box-shadow: 0 0 0 3px rgba(11, 92, 171, 0.25) !important;
+}
+.app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate.sapMBtnDisabled, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent).sapMBtnDisabled {
+  cursor: default !important;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent) .sapMBtnInner,
+  .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn.aamlBtnRecalculate, .app-page .sapMTB.aamlTableToolbar .sapMBtn.sapMBtn:has(.sapMBtnContent) .sapMBtnIcon {
+    transition: none !important;
+    animation: none !important;
+  }
+}

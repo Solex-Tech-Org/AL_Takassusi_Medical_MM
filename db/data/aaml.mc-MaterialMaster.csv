@@ -1,11 +1,12 @@
-Material,Description,MaterialType,NuclearModel,BaseUnit,MaxMciPerVial,Active
-RM124,CT Contrast Media,Normal,,EA,,true
-RM221,Disposable Syringe 10ml,Normal,,EA,,true
-RM310,IV Cannula 20G,Normal,,EA,,true
-RM450,Patient Prep Kit,Normal,,BOX,,true
-NM-L01,Nuclear Liquid Demo,Nuclear,LiquidDaily,Vial,50,true
-NM-P07,Nuclear Powder Demo,Nuclear,PowderLongLife,Vial,100,true
-NS-000114,Injector line,Nursing,,EA,,true
-NS-000142,Examination gloves,Nursing,,BOX,,true
-NS-000155,Ultrasound gel,Nursing,,EA,,true
-NS-000188,Disposable probe cover,Nursing,,EA,,true
+Material,ProductOldID,Description,MaterialType,NuclearModel,ProductType,IsBatchManagementRequired,TotalShelfLife,ShelfLifeExpirationDatePeriod,BaseUnit,MaxMciPerVial,Active
+RM124,RM124,CT Contrast Media,Normal,,Z001,true,365,D,EA,,true
+RM221,RM221,Disposable Syringe 10ml,Normal,,Z001,true,365,D,EA,,true
+RM310,RM310,IV Cannula 20G,Normal,,Z001,true,365,D,EA,,true
+RM450,RM450,Patient Prep Kit,Normal,,Z001,true,365,D,BOX,,true
+RM-B01,RM-B01,Demo Batch-managed Normal,Normal,,Z001,true,365,D,EA,,true
+NM-L01,NM-L01,Nuclear Liquid Demo,Nuclear,LiquidDaily,Z005,true,1,D,VIL,50,true
+NM-P07,NM-P07,Nuclear Powder Demo,Nuclear,PowderLongLife,Z005,true,365,D,VIL,100,true
+NS-000114,NS-000114,Injector line,Nursing,,Z001,false,0,D,EA,,true
+NS-000142,NS-000142,Examination gloves,Nursing,,Z001,false,0,D,BOX,,true
+NS-000155,NS-000155,Ultrasound gel,Nursing,,Z001,false,0,D,EA,,true
+NS-000188,NS-000188,Disposable probe cover,Nursing,,Z001,false,0,D,EA,,true

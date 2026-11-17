@@ -1,0 +1,10 @@
+Code,Description,SortOrder
+Z00,Other NM,1
+Z01,Pet-Ct,2
+Z02,CT,3
+Z03,MRI,4
+Z04,MAMO,5
+Z05,US,6
+Z06,X-RAY,7
+Z07,X-RAY (BMD),8
+Z08,X-RAY (FLUORO),9

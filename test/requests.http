@@ -2,6 +2,54 @@
 @host = http://localhost:4004/odata/v4/quality/MaterialConsumptionService
 @baseUrl = http://localhost:4004
 
+### Master data: Hospitals
+GET {{host}}/Hospitals
+Authorization: {{auth}}
+
+
+### Master data: Modalities
+GET {{host}}/Modalities
+Authorization: {{auth}}
+
+
+### Hospital + Modality -> SAP plant / storage location / cost center mappings
+GET {{host}}/HospitalModalityMappings?$orderby=Hospital,Modality
+Authorization: {{auth}}
+
+# To add an active pair, use the confirmed SAP values from the responsible team:
+# POST {{host}}/HospitalModalityMappings
+# Content-Type: application/json
+# Authorization: {{auth}}
+#
+# {"Hospital":"S001","Modality":"Z00","Plant":"<SAP plant>","StorageLocation":"<storage location>","CostCenter":"<cost center>","Active":true}
+
+
+### Modality Profit Center Mapping: list all mappings
+GET {{host}}/ModalityProfitCenterMappings
+Authorization: {{auth}}
+
+
+### Modality Profit Center Mapping: create a test mapping
+# Change ProfitCenter if this key pair already exists.
+POST {{host}}/ModalityProfitCenterMappings
+Content-Type: application/json
+Authorization: {{auth}}
+
+{"Modality":"Z04","ProfitCenter":"PC-HTTP-TEST-01"}
+
+
+### Modality Profit Center Mapping: read the created test mapping
+GET {{host}}/ModalityProfitCenterMappings(Modality='Z04',ProfitCenter='PC-HTTP-TEST-01')
+Authorization: {{auth}}
+
+
+### Modality Profit Center Mapping: verify unknown modality is rejected
+POST {{host}}/ModalityProfitCenterMappings
+Content-Type: application/json
+Authorization: {{auth}}
+
+{"Modality":"Z99","ProfitCenter":"PC-HTTP-TEST-01"}
+
 
 ### 1) كل المعاملات السابقة
 GET {{host}}/CaseSessions?$orderby=createdAt desc&$count=true
@@ -12,6 +60,8 @@ POST {{host}}/openSession
 Content-Type: application/json
 
 {"dateFrom":"2026-10-07","dateTo":"2026-10-13"}
+
+
 
 
 ### Get Data Posted CS-0001
@@ -32,6 +82,11 @@ Authorization: {{auth}}
 
 ### ConsumptionTechnical - list (all statuses)
 GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/ConsumptionTechnical?$count=true
+Authorization: {{auth}}
+
+
+### Verify ConsumptionRequests reference the Hospitals and Modalities code lists
+GET {{host}}/ConsumptionTechnical?$select=ID,CaseId,Hospital_Code,Modality_Code&$expand=Hospital,Modality
 Authorization: {{auth}}
 
 
@@ -77,3 +132,240 @@ GET {{baseUrl}}/odata/v4/quality/MaterialConsumptionService/SAPDocumentResults
     &$count=true
     &$orderby=createdAt desc
 Authorization: {{auth}}
+
+
+### Recalculate CS-0001 — BEFORE (keep this response for comparison)
+GET {{host}}/CaseConsumption?$filter=ServiceDate%20ge%202026-10-05%20and%20ServiceDate%20le%202026-10-11
+Authorization: {{auth}}
+
+> {%
+client.test("Before recalculation: all 8 demo cases are open", function () {
+    client.assert(response.status === 200, "The before snapshot should load");
+    client.assert(response.body.value.length === 8, "Expected 8 open cases before recalculation");
+    client.assert(response.body.value.some(row => String(row.CaseId) === "2023"), "Case 2023 must be present before recalculation");
+});
+%}
+
+
+### Recalculate CS-0001 (recalculates only; does not post consumption)
+POST {{host}}/calculateNuclear
+Content-Type: application/json
+Authorization: {{auth}}
+
+{
+  "ids": [
+    "30000000-0000-0000-0000-000000000011",
+    "30000000-0000-0000-0000-000000000012",
+    "30000000-0000-0000-0000-000000000013",
+    "30000000-0000-0000-0000-000000000014",
+    "30000000-0000-0000-0000-000000000015",
+    "30000000-0000-0000-0000-000000000016",
+    "30000000-0000-0000-0000-000000000017",
+    "30000000-0000-0000-0000-000000000018"
+  ]
+}
+
+### Recalculate CS-0001 — AFTER (should still contain all 8 open cases)
+GET {{host}}/CaseConsumption?$filter=ServiceDate%20ge%202026-10-05%20and%20ServiceDate%20le%202026-10-11
+Authorization: {{auth}}
+
+> {%
+client.test("After recalculation: no open demo case disappeared", function () {
+    client.assert(response.status === 200, "The after snapshot should load");
+    client.assert(response.body.value.length === 8, "Expected the same 8 open cases after recalculation");
+    client.assert(response.body.value.some(row => String(row.CaseId) === "2023"), "Case 2023 must remain in the open case list");
+});
+%}
+
+
+### Demo: add two liquid cases to verify daily waste allocation
+# Both cases use the existing mock batch 261005-001 (5 received Vial, 50 mCi/Vial)
+# for 2026-10-05. Together with the existing 20 mCi liquid case, daily activity is
+# 50 mCi and daily waste is 4.000 Vial. After clicking Recalculate pending cases,
+# expected EstimatedWaste for the new rows: Case 2027 = 0.800, Case 2028 = 1.600.
+# Re-running this request is safe: the stable SourceRecordIds make duplicate versions no-ops.
+POST {{host}}/receiveFromRis
+Content-Type: application/json
+Authorization: {{auth}}
+
+{
+  "rows": [
+    {
+      "CaseId": "2027",
+      "SourceRecordId": "DEMO-LIQUID-WASTE-2027-20261005",
+      "ProcedureCode": "PROC-NUC-L01",
+      "RISMaterialCode": "NM-L01",
+      "ServiceDate": "2026-10-05",
+      "Hospital": "S001",
+      "Modality": "Z02",
+      "ActualMci": 10
+    },
+    {
+      "CaseId": "2028",
+      "SourceRecordId": "DEMO-LIQUID-WASTE-2028-20261005",
+      "ProcedureCode": "PROC-NUC-L01",
+      "RISMaterialCode": "NM-L01",
+      "ServiceDate": "2026-10-05",
+      "Hospital": "S001",
+      "Modality": "Z02",
+      "ActualMci": 20
+    }
+  ]
+}
+
+### Verify liquid demo cases and their estimated waste after recalculation in the UI
+GET {{host}}/CaseConsumption?$filter=CaseId%20eq%20'2027'%20or%20CaseId%20eq%20'2028'&$select=CaseId,ServiceDate,ActualMci,EstimatedWaste,Status,ErrorMessage&$orderby=CaseId
+Authorization: {{auth}}
+
+
+### Demo: Liquid same-day batch split and waste allocation (requires the added mock batches)
+# Case 2029 needs 1.200 Vial from 261011-001.
+# Case 2030 needs 1.800 Vial: 0.800 from 261011-001 and 1.000 from 261011-002.
+# Daily receipt is 5 Vial = 250 mCi; total case activity is 150 mCi, so daily waste is 2.000 Vial.
+# After Recalculate pending cases, expected EstimatedWaste: Case 2029 = 0.800, Case 2030 = 1.200.
+POST {{host}}/receiveFromRis
+Content-Type: application/json
+Authorization: {{auth}}
+
+{
+  "rows": [
+    {
+      "CaseId": "2029",
+      "SourceRecordId": "DEMO-LIQUID-BATCH-SPLIT-2029-20261011",
+      "ProcedureCode": "PROC-NUC-L01",
+      "RISMaterialCode": "NM-L01",
+      "ServiceDate": "2026-10-11",
+      "Hospital": "S001",
+      "Modality": "Z02",
+      "ActualMci": 60
+    },
+    {
+      "CaseId": "2030",
+      "SourceRecordId": "DEMO-LIQUID-BATCH-SPLIT-2030-20261011",
+      "ProcedureCode": "PROC-NUC-L01",
+      "RISMaterialCode": "NM-L01",
+      "ServiceDate": "2026-10-11",
+      "Hospital": "S001",
+      "Modality": "Z02",
+      "ActualMci": 90
+    }
+  ]
+}
+
+### Verify Liquid batch split and waste rows after recalculation in the UI
+GET {{host}}/CaseConsumption?$filter=CaseId%20eq%20'2029'%20or%20CaseId%20eq%20'2030'&$select=CaseId,ServiceDate,ActualMci,PostingQuantity,Batch,BatchDetails,EstimatedWaste,Status,ErrorMessage&$orderby=CaseId
+Authorization: {{auth}}
+
+
+### Demo: add a batch-managed Normal case with visible batch and no waste
+# Run this request once; it adds the case to the active app/database.
+# RM-B01 is a Normal batch-managed mock material. FEFO picks 1 EA from N26011-A,
+# then 1 EA from N26011-B; Expected Waste is blank because this is a Normal material.
+POST {{host}}/receiveFromRis
+Content-Type: application/json
+Authorization: {{auth}}
+
+{
+  "rows": [
+    {
+      "CaseId": "2031",
+      "SourceRecordId": "DEMO-NORMAL-NOWASTE-2031-20261011",
+      "ProcedureCode": "PROC-CT-BATCH",
+      "RISMaterialCode": "RM-B01",
+      "ServiceDate": "2026-10-11",
+      "Hospital": "S001",
+      "Modality": "Z02",
+      "Quantity": 2,
+      "EntryUnit": "EA"
+    }
+  ]
+}
+
+### Verify batch-managed Normal case appears with a Batch and no waste
+GET {{host}}/CaseConsumption?$filter=CaseId%20eq%20'2031'&$select=CaseId,ServiceDate,Material,MaterialClass,Quantity,PostingQuantity,PostingUnit,Batch,BatchDetails,EstimatedWaste,Status,ErrorMessage
+Authorization: {{auth}}
+
+
+### Demo: one visible FEFO batch for each regular Normal material
+# The cases are also seeded in db/data/aaml.mc-ConsumptionRequests.csv.
+# Run this only if the existing DB did not reload the CSV during deployment; it is safe to rerun.
+# All four rows are on the same day and use S001/Z02. No Waste is expected for Normal materials.
+# Case 2041 -> RM124 / NRM124-591-01; Case 2042 -> RM221 / NRM221-591-01;
+# Case 2043 -> RM310 / NRM310-591-01; Case 2044 -> RM450 / NRM450-591-01.
+POST {{host}}/receiveFromRis
+Content-Type: application/json
+Authorization: {{auth}}
+
+{
+  "rows": [
+    {
+      "CaseId": "2041",
+      "SourceRecordId": "DEMO-NORMAL-BATCH-RM124-2041-20261011",
+      "ProcedureCode": "PROC-CT-01",
+      "RISMaterialCode": "RM124",
+      "ServiceDate": "2026-10-11",
+      "Hospital": "S001",
+      "Modality": "Z02",
+      "Quantity": 2,
+      "EntryUnit": "EA"
+    },
+    {
+      "CaseId": "2042",
+      "SourceRecordId": "DEMO-NORMAL-BATCH-RM221-2042-20261011",
+      "ProcedureCode": "PROC-CT-02",
+      "RISMaterialCode": "RM221",
+      "ServiceDate": "2026-10-11",
+      "Hospital": "S001",
+      "Modality": "Z02",
+      "Quantity": 2,
+      "EntryUnit": "EA"
+    },
+    {
+      "CaseId": "2043",
+      "SourceRecordId": "DEMO-NORMAL-BATCH-RM310-2043-20261011",
+      "ProcedureCode": "PROC-CT-03",
+      "RISMaterialCode": "RM310",
+      "ServiceDate": "2026-10-11",
+      "Hospital": "S001",
+      "Modality": "Z02",
+      "Quantity": 2,
+      "EntryUnit": "EA"
+    },
+    {
+      "CaseId": "2044",
+      "SourceRecordId": "DEMO-NORMAL-BATCH-RM450-2044-20261011",
+      "ProcedureCode": "PROC-CT-04",
+      "RISMaterialCode": "RM450",
+      "ServiceDate": "2026-10-11",
+      "Hospital": "S001",
+      "Modality": "Z02",
+      "Quantity": 1,
+      "EntryUnit": "BOX"
+    }
+  ]
+}
+
+### Verify all regular Normal demo rows show a Batch and no Waste
+GET {{host}}/CaseConsumption?$filter=CaseId%20ge%20'2041'%20and%20CaseId%20le%20'2044'&$select=CaseId,ServiceDate,Material,MaterialClass,Quantity,PostingQuantity,PostingUnit,Batch,BatchDetails,EstimatedWaste,Status,ErrorMessage&$orderby=CaseId
+Authorization: {{auth}}
+
+
+### Recalculate CS-0001 — inspect Case 2023 in all statuses if the after assertion fails
+GET {{host}}/ConsumptionTechnical?$filter=CaseId%20eq%20'2023'&$select=ID,CaseId,ServiceDate,Status,ErrorMessage,SAPMaterialDocument,SAPMaterialDocumentYear
+Authorization: {{auth}}
+
+###
+GET {{host}}/ConsumptionTechnical?$filter=CaseId%20eq%20'2019'&$select=CaseId,Status,SAPMaterialDocument,SAPMaterialDocumentYear,SAPMaterialDocumentItem
+
+
+###
+### Post Case 2019 — mock material document
+POST {{host}}/postSelected
+Content-Type: application/json
+Authorization: {{auth}}
+
+{
+  "ids": [
+    "30000000-0000-0000-0000-000000000011"
+  ]
+}

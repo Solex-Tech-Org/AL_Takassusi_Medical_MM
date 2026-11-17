@@ -1,3 +1,4 @@
+
 {
   "name": "AL_Takassusi_Medical_MM",
   "version": "1.0.0",
@@ -14,6 +15,8 @@
   },
   "scripts": {
     "start": "cds-serve",
+    "prewatch": "npm run build:styles",
+    "build:styles": "sass app/css/style.scss app/css/style.css --no-source-map",
     "watch": "cds-serve"
   },
   "private": true,
@@ -23,20 +26,95 @@
       "destinations": true,
       "html5-repo": true,
       "AAML_ProductApi": {
-        "kind": "rest",
+        "kind": "odata-v2",
+        "csrf": false,
         "credentials": {
           "destination": "AAML_Public_Cloud",
-          "path": "/sap/opu/odata4/sap/api_product/srvd_a2x/sap/product/0002"
+          "path": "/sap/opu/odata/sap/API_PRODUCT_SRV"
         }
       },
-      "[production]": {
-        "auth": "dummy"
+      "AAML_BatchApi": {
+        "kind": "odata-v2",
+        "csrf": false,
+        "credentials": {
+          "destination": "AAML_Public_Cloud",
+          "path": "/sap/opu/odata/sap/API_BATCH_SRV"
+        }
+      },
+      "AAML_MaterialStockApi": {
+        "kind": "odata-v2",
+        "csrf": false,
+        "credentials": {
+          "destination": "AAML_Public_Cloud",
+          "path": "/sap/opu/odata/sap/API_MATERIAL_STOCK_SRV"
+        }
+      },
+      "AAML_MaterialDocumentApi": {
+        "kind": "odata-v2",
+        "csrf": true,
+        "credentials": {
+          "destination": "AAML_Public_Cloud",
+          "path": "/sap/opu/odata/sap/API_MATERIAL_DOCUMENT_SRV"
+        }
+      },
+      "AAML_MaterialPostingApi": {
+        "kind": "rest",
+        "csrf": false,
+        "credentials": {
+          "destination": "AAML_Material_Posting"
+        }
+      },
+      "AAML_SlocMappingApi": {
+        "kind": "odata-v2",
+        "csrf": false,
+        "credentials": {
+          "destination": "AAML_Public_Cloud",
+          "path": "/"
+        }
       }
     },
     "aaml": {
+      "ris": {
+        "serviceTimeZone": "",
+        "fieldMap": {}
+      },
       "productApi": {
         "destination": "AAML_Public_Cloud",
         "language": "EN"
+      },
+      "s4": {
+        "mode": "mock",
+        "readMode": "mock",
+        "postingMode": "mock",
+        "plant": "1100",
+        "slocMappingPath": "",
+        "slocMappingFields": {
+          "plant": "Plant",
+          "storageLocation": "StorageLocation",
+          "hospitalSearchTerm": "AddressSearchTerm1",
+          "modalitySearchTerm": "AddressSearchTerm2"
+        },
+        "goodsIssuePostPath": "/sap/bc/http/sap/zmm_mse_post_api",
+        "goodsReceiptItemsPath": "/A_MaterialDocumentItem",
+        "goodsReceiptQuantityField": "QuantityInBaseUnit",
+        "goodsReceiptPostingDateField": "PostingDate",
+        "goodsReceiptMovementTypes": [],
+        "wastePostingDateRule": "",
+        "goodsIssueCaseLookupPath": "/A_MaterialDocumentItem",
+        "goodsIssueCaseLookupField": "YY1_CaseID_MMI"
+      }
+    },
+    "[production]": {
+      "requires": {
+        "auth": "dummy"
+      },
+      "aaml": {
+        "s4": {
+          "mode": "mock",
+          "readMode": "remote",
+          "postingMode": "mock",
+          "casePostingMode": "remote"
+        }
       }
     }
   }

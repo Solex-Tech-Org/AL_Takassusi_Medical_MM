@@ -1,8 +1,8 @@
-sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/formatter", "sap/ui/model/Filter", "sap/ui/model/FilterOperator"],
-    function (BaseController, formatter, Filter, FO) {
+sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/formatter", "sap/ui/model/Filter", "sap/ui/model/FilterOperator", "sap/ui/model/json/JSONModel"],
+    function (BaseController, formatter, Filter, FO, JSONModel) {
         "use strict";
 
-        // [input id, OData property, operator]
+        // [control id, OData property, operator]
         const FILTERS = [
             ["rDate", "ServiceDate", FO.EQ],
             ["rHospital", "Hospital", FO.EQ],
@@ -16,19 +16,46 @@ sap.ui.define(["aaml/material/controller/BaseController", "aaml/material/model/f
         return BaseController.extend("aaml.material.controller.MaterialReport", {
             formatter: formatter,
 
-            onInit: function () { this.refreshOnRoute(["materialReport"]); },
+            onInit: function () {
+                this.getView().setModel(new JSONModel({ HospitalFilter: "", ModalityFilter: "", Hospitals: [], Modalities: [] }), "view");
+                this.refreshOnRoute(["materialReport"]);
+                this._loadCodeLists();
+            },
+
+            _loadCodeLists: async function () {
+                try {
+                    const model = this.getODataModel();
+                    const [hospitalContexts, modalityContexts] = await Promise.all([
+                        model.bindList("/Hospitals").requestContexts(0, 500),
+                        model.bindList("/Modalities").requestContexts(0, 500)
+                    ]);
+                    const options = contexts => contexts.map(context => context.getObject())
+                        .sort((a, b) => Number(a.SortOrder || 0) - Number(b.SortOrder || 0))
+                        .map(row => {
+                        return { key: row.Code, text: `${row.Code} - ${row.Description}` };
+                    });
+                    const vm = this.getView().getModel("view");
+                    vm.setProperty("/Hospitals", options(hospitalContexts));
+                    vm.setProperty("/Modalities", options(modalityContexts));
+                } catch (e) { this.showError(e); }
+            },
 
             onFilter: function () {
                 const f = [];
                 FILTERS.forEach(([id, path, op]) => {
-                    const v = this.byId(id).getValue().trim();
+                    const control = this.byId(id);
+                    const v = control.getSelectedKey ? control.getSelectedKey() : control.getValue().trim();
                     if (v) { f.push(new Filter(path, op, v)); }
                 });
                 this.byId("historyTable").getBinding("items").filter(f);
             },
 
             onClearFilters: function () {
-                FILTERS.forEach(([id]) => this.byId(id).setValue(""));
+                FILTERS.forEach(([id]) => {
+                    const control = this.byId(id);
+                    if (control.setSelectedKey) { control.setSelectedKey(""); }
+                    else { control.setValue(""); }
+                });
                 this.byId("historyTable").getBinding("items").filter([]);
             },
 

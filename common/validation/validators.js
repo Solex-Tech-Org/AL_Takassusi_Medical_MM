@@ -5,13 +5,13 @@ const issue = (code, message) => ({ code, message });
 const waitingRow = row => {
     const out = [];
     if (['Posted', 'Reversed'].includes(row.Status)) out.push(issue('ALREADY_POSTED', 'Row is already posted/reversed'));
-    for (const f of ['CaseId', 'SourceRecordId', 'ServiceDate', 'Hospital', 'Modality'])
+    for (const f of ['CaseId', 'SourceRecordId', 'ProcedureCode', 'RISMaterialCode', 'ServiceDate', 'Hospital', 'Modality'])
         if (!row[f]) out.push(issue('MISSING_' + f.toUpperCase(), `Required source field ${f} is missing`));
     return out;
 };
 const classification = (master, materialClass) => {
     if (!master) return [issue('MATERIAL_UNKNOWN', 'Material not found in material data')];
-    if (!materialClass) return [issue('CLASSIFICATION_INVALID', 'Material Type / Nuclear Consumption Model incomplete or invalid for case consumption')];
+    if (!materialClass) return [issue('CLASSIFICATION_INVALID', 'SAP ProductType or shelf-life data is incomplete for material classification')];
     return [];
 };
 const normalQuantity = row =>
@@ -29,9 +29,17 @@ const liquidBatch = (stock, vials, batch) =>
 const powderBatch = pick =>
     pick.allocations.length === 0 ? [issue('POWDER_NO_STOCK', 'No eligible unrestricted Powder batch')]
         : pick.shortfall > 0 ? [issue('POWDER_STOCK_SHORT', `Insufficient Powder stock across FEFO batches (short ${pick.shortfall} Vial)`)] : [];
-const movementType = (cfg, prohibited = ['Z01']) =>
+const batchAllocation = (pick, required, unit, kind) => {
+    if (!pick.allocations.length) return [issue('BATCH_NO_STOCK', `No eligible ${kind} batch has unrestricted stock`)];
+    return pick.shortfall > 0 ? [issue('BATCH_STOCK_SHORT', `Insufficient eligible ${kind} stock (short ${pick.shortfall} ${unit})`)] : [];
+};
+// Movement types are tenant-specific. Validate the configured goods-issue code
+// here; do not hard-code Z01 as prohibited because S/4 has accepted it for a
+// posted material document in this tenant. Scenario approval stays in config.
+const movementType = (cfg, prohibited = []) =>
     !cfg || !cfg.Active || !cfg.GoodsMovementType ? [issue('MOVEMENT_TYPE_MISSING', 'Approved custom goods-issue movement type is not configured')]
-        : prohibited.includes(cfg.GoodsMovementType) ? [issue('MOVEMENT_TYPE_PROHIBITED', `Movement type ${cfg.GoodsMovementType} is prohibited (not a goods-issue type)`)] : [];
+        : cfg.GoodsMovementCode !== '03' ? [issue('MOVEMENT_CODE_INVALID', 'GoodsMovementCode must be 03 for goods issue')]
+            : prohibited.includes(cfg.GoodsMovementType) ? [issue('MOVEMENT_TYPE_PROHIBITED', `Movement type ${cfg.GoodsMovementType} is prohibited (not a goods-issue type)`)] : [];
 const location = maps =>
     maps.length !== 1 ? [issue('LOCATION_MAPPING', `Hospital + Modality must map to exactly one active entry (found ${maps.length})`)] : [];
 const costCenter = maps =>
@@ -55,6 +63,6 @@ const sharedStock = (available, requested) => {
 const msg = list => list.map(i => i.message).join('; ');
 
 module.exports = {
-    waitingRow, classification, normalQuantity, nuclearActivity, liquidBatch, powderBatch,
+    waitingRow, classification, normalQuantity, nuclearActivity, liquidBatch, powderBatch, batchAllocation,
     movementType, location, costCenter, sharedMaterial, sharedItem, sharedStock, msg
 };

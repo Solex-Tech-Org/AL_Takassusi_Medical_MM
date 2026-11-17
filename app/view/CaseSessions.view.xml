@@ -8,7 +8,8 @@
   <Page
     showHeader="false"
     enableScrolling="true"
-    class="app-page">
+    class="app-page"
+    busy="{view>/busy}">
 
     <content>
       <VBox class="app-pad sapUiSizeCompact">
@@ -38,6 +39,18 @@
                   type="Emphasized"
                   press=".onCreate"
                   class="aamlBtn aamlBtnGo"/>
+                <Button
+                  text="{i18n>importExcel}"
+                  icon="sap-icon://upload"
+                  type="Default"
+                  press=".onImport"
+                  class="aamlBtn aamlBtnWide"/>
+                <Button
+                  text="{i18n>exportExcel}"
+                  icon="sap-icon://download"
+                  type="Default"
+                  press=".onExport"
+                  class="aamlBtn aamlBtnWide"/>
               </HBox>
             </VBox>
 
@@ -197,6 +210,10 @@
                   <Text text="{i18n>colStatus}"/>
                 </Column>
 
+                <Column hAlign="Center" styleClass="aamlColCenter" width="7rem">
+                  <Text text="{i18n>colActions}"/>
+                </Column>
+
               </columns>
 
               <items>
@@ -226,6 +243,13 @@
                       text="{SessionStatus}"
                       state="{path: 'SessionStatus', formatter: '.formatter.statusState'}"/>
 
+                    <Button
+                      icon="sap-icon://delete"
+                      type="Transparent"
+                      tooltip="{i18n>deleteSession}"
+                      enabled="{= ${PostedCases} === 0 }"
+                      press=".onDeleteSession"/>
+
                   </cells>
                 </ColumnListItem>
               </items>
@@ -237,5 +261,47 @@
 
       </VBox>
     </content>
+
+    <dependents>
+      <Dialog
+        id="importDialog"
+        title="{i18n>importPreviewTitle}"
+        draggable="true"
+        resizable="true">
+        <content>
+          <VBox class="sapUiMediumMargin aamlImportDialogContent">
+            <Text id="importFileName" wrapping="true"/>
+            <Text id="importSummary" wrapping="true"/>
+            <HBox wrap="Wrap" alignItems="End" class="aamlFilterBar aamlFilterRange">
+              <VBox class="aamlFilterField">
+                <Label text="{i18n>dateFrom}" labelFor="importDateFrom" required="true"/>
+                <DatePicker
+                  id="importDateFrom"
+                  valueFormat="yyyy-MM-dd"
+                  displayFormat="medium"
+                  width="100%"
+                  placeholder="{i18n>dateFrom}"/>
+              </VBox>
+              <VBox class="aamlFilterField">
+                <Label text="{i18n>dateTo}" labelFor="importDateTo" required="true"/>
+                <DatePicker
+                  id="importDateTo"
+                  valueFormat="yyyy-MM-dd"
+                  displayFormat="medium"
+                  width="100%"
+                  placeholder="{i18n>dateTo}"/>
+              </VBox>
+            </HBox>
+            <Text text="{i18n>importColumnHint}" wrapping="true"/>
+          </VBox>
+        </content>
+        <beginButton>
+          <Button text="{i18n>importExcel}" type="Emphasized" press=".onConfirmImport"/>
+        </beginButton>
+        <endButton>
+          <Button text="{i18n>cancel}" press=".onCancelImport"/>
+        </endButton>
+      </Dialog>
+    </dependents>
   </Page>
 </mvc:View>

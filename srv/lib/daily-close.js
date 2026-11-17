@@ -3,7 +3,7 @@ const cds = require('@sap/cds');
 const { SELECT, INSERT, UPDATE } = cds.ql;
 const calc = require('../../common/calculation/nuclear');
 const payload = require('../../common/integration/payload-builder');
-const { getS4Api } = require('../../common/integration/s4-material-api');
+const { getS4Api, NotConfiguredError, getRemotePostingConfigIssues } = require('../../common/integration/s4-material-api');
 const { OPEN } = require('./case-consumption');
 
 const E = () => cds.entities('aaml.mc');
@@ -26,19 +26,21 @@ async function computeWaste(serviceDate) {
     for (const a of await SELECT.from(BatchAllocations).where({ Request_ID: row.ID })) {
       const k = `${row.Material}|${row.Plant}|${row.StorageLocation}|${a.Batch}`;
       if (!groups.has(k)) groups.set(k, { row, batch: a.Batch, items: [] });
-      groups.get(k).items.push({ row, vials: Number(a.Vials) });
+      groups.get(k).items.push({ row, vials: Number(a.Quantity ?? a.Vials), mci: Number(a.Mci ?? 0) });
     }
   }
   const lines = [];
   for (const g of groups.values()) {
     const max = Number(g.row.MaximumMciPerVial);
-    const actualVials = calc.r(g.items.reduce((s, i) => s + i.vials, 0));
-    const totalMci = calc.r(actualVials * max);
+    const totalMci = calc.r(g.items.reduce((sum, item) => sum + (item.mci > 0 ? item.mci : item.vials * max), 0));
+    const actualVials = calc.r(totalMci / max);
     let wasteVials, base;
     if (g.row.MaterialClass === 'NuclearLiquid') {
-      const stock = await s4.getBatchStock({ material: g.row.Material, plant: g.row.Plant, storageLocation: g.row.StorageLocation, batch: g.batch });
-      if (!stock) throw new Error(`Received quantity for batch ${g.batch} unavailable - cannot calculate Liquid waste`);
-      const w = calc.calculateLiquidDailyWaste({ receivedVials: Number(stock.ReceivedQty), maxMciPerVial: max, postedMci: totalMci });
+      const stock = await s4.getBatchStock({ material: g.row.Material, plant: g.row.Plant, storageLocation: g.row.StorageLocation,
+        batch: g.batch, serviceDate });
+      if (!stock || !(Number(stock.ReceivedQty) > 0))
+        throw new Error(`Daily receipt quantity for Liquid batch ${g.batch} is unavailable; configure the receipt-quantity source before daily close`);
+      const w = calc.calculateLiquidDailyWaste({ receivedVials: Number(stock.ReceivedQty), maxMciPerVial: max, caseMci: totalMci });
       if (w.wasteMci < 0) throw new Error(`Batch ${g.batch}: posted activity exceeds received activity`);
       wasteVials = w.wasteVials; base = Number(stock.ReceivedQty);
     } else {
@@ -46,7 +48,7 @@ async function computeWaste(serviceDate) {
       wasteVials = w.wasteVials; base = w.openedVials;
     }
     if (!(wasteVials > 0)) continue;
-    const alloc = calc.allocateByShare(g.items.map(i => ({ key: i.row.ID, weight: i.vials })), wasteVials);
+    const alloc = calc.allocateByShare(g.items.map(i => ({ key: i.row.ID, weight: i.mci > 0 ? i.mci : i.vials * max })), wasteVials);
     const reconciled = calc.r(alloc.reduce((s, a) => s + a.amount, 0));
     if (reconciled !== calc.r(wasteVials)) throw new Error(`Batch ${g.batch}: allocations do not reconcile to waste`);
     for (const a of alloc) {
@@ -76,6 +78,9 @@ async function executeDailyClose(serviceDate) {
     if (['Posted', 'NoWaste'].includes(latest.Status)) return closeResult(latest, 'Daily close already completed - existing result returned');
     return postWaste(latest);                                          // WastePending / Error -> retry with same idempotency key
   }
+  const wastePostingDateRule = cfg().s4?.wastePostingDateRule;
+  if (cfg().s4?.mode === 'remote' && !['ServiceDate', 'CurrentDate'].includes(wastePostingDateRule))
+    return { ServiceDate: serviceDate, Status: 'Error', Message: 'Configure cds.aaml.s4.wastePostingDateRule as ServiceDate or CurrentDate before daily close.' };
   let lines;
   try { lines = await computeWaste(serviceDate); }
   catch (e) { return { ServiceDate: serviceDate, Status: 'Error', Message: e.message }; }
@@ -107,12 +112,23 @@ async function postWaste(close) {
     await INSERT.into(PostingLogs).entries({ DailyClose_ID: close.ID, Scenario: 'NuclearWaste', IdempotencyKey: close.IdempotencyKey, Outcome: outcome, Message: msg.slice(0, 500) });
     return closeResult({ ...close, Status: 'Error' }, msg);
   };
+  if (cfg().s4?.mode === 'remote' && /^DEMO/i.test(String(mv?.GoodsMovementType || '')))
+    bad.push({ code: 'MOVEMENT_TYPE_PLACEHOLDER', message: 'Configure the SAP-approved goods-movement type before remote posting' });
   if (bad.length) return fail(V.msg(bad), 'BusinessError');
-  const postingDate = cfg().wastePostingDateRule === 'ServiceDate' ? close.ServiceDate : new Date().toISOString().slice(0, 10); // CONFIG_PLACEHOLDER
+  const configIssues = getRemotePostingConfigIssues({ scenario: 'NuclearWaste' });
+  if (configIssues.length) return fail(V.msg(configIssues), 'BusinessError');
+  const wastePostingDateRule = cfg().s4?.wastePostingDateRule;
+  if (cfg().s4?.mode === 'remote' && !['ServiceDate', 'CurrentDate'].includes(wastePostingDateRule))
+    return fail('Configure cds.aaml.s4.wastePostingDateRule as ServiceDate or CurrentDate before daily close.', 'BusinessError');
+  const postingDate = wastePostingDateRule === 'ServiceDate' ? close.ServiceDate : new Date().toISOString().slice(0, 10);
   const body = payload.wastePosting(close, allocs, mv, close.IdempotencyKey, postingDate);
   let res;
   try { res = await s4.postMaterialDocument(body); }
-  catch (e) { res = await s4.findResultByIdempotencyKey(close.IdempotencyKey).catch(() => null); if (!res) return fail(`Technical error: ${e.message}`, 'TechnicalError'); }
+  catch (e) {
+    if (e instanceof NotConfiguredError) return fail(e.message, 'BusinessError');
+    res = await s4.findResultByIdempotencyKey(close.IdempotencyKey).catch(() => null);
+    if (!res) return fail(`Technical error: ${e.message}`, 'TechnicalError');
+  }
   if (!res.success) return fail(res.Message, 'BusinessError');
   await UPDATE(DailyCloses, close.ID).with({ Status: 'Posted', ErrorMessage: null, SAPMaterialDocument: res.MaterialDocument, SAPMaterialDocumentYear: res.MaterialDocumentYear });
   for (let i = 0; i < allocs.length; i++)

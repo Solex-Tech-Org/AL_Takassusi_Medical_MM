@@ -27,7 +27,8 @@ function casePrimary(row, lines, mv) {
         ...(nuclear && { ActualMci: row.ActualMci, MaximumMciPerVial: row.MaximumMciPerVial, NMConsumptionModel: row.NuclearModel }),
         Items: lines.map((l, i) => ({
             MaterialDocumentLine: i + 1, GoodsMovementType: mv.GoodsMovementType, Material: row.Material,
-            Plant: row.Plant, StorageLocation: row.StorageLocation, Quantity: l.quantity, EntryUnit: l.unit, Batch: l.batch, BatchSource: l.batchSource
+            Plant: row.Plant, StorageLocation: row.StorageLocation, Quantity: l.quantity, EntryUnit: l.unit, Batch: l.batch, BatchSource: l.batchSource,
+            CaseId: row.CaseId, Hospital: row.Hospital, Modality: row.Modality, CostCenter: l.costCenter || row.CostCenter
         }))
     };
 }
@@ -42,8 +43,8 @@ function wastePosting(close, allocs, mv, key, postingDate) {
         DailyCloseId: close.ID, DailyGroupKey: close.DailyGroupKey,
         Items: allocs.map((a, i) => ({
             MaterialDocumentLine: i + 1, GoodsMovementType: mv.GoodsMovementType, Material: a.Material,
-            Plant: a.Plant, StorageLocation: a.StorageLocation, Quantity: a.WasteVials, EntryUnit: 'Vial', Batch: a.Batch,
-            CaseId: a.CaseId, Hospital: a.Hospital, Modality: a.Modality, NMConsumptionModel: a.NuclearModel,
+            Plant: a.Plant, StorageLocation: a.StorageLocation, Quantity: a.WasteVials, EntryUnit: 'VIL', Batch: a.Batch,
+            CaseId: a.CaseId, Hospital: a.Hospital, Modality: a.Modality,
             PrimaryDocumentReference: a.PrimaryDocumentReference, AllocationShare: a.AllocationShare
         }))
     };
