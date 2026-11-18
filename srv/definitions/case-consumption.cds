@@ -1,4 +1,5 @@
 using {aaml.mc as db} from '../../db/schema';
+
 extend service MaterialConsumptionService {
     @readonly
     entity CaseConsumption      as
@@ -38,9 +39,11 @@ extend service MaterialConsumptionService {
             Status in (
                 'Received', 'Ready', 'Blocked', 'NeedsCorrection', 'Error', 'Posted'
             );
+
     @readonly
     @requires: 'authenticated-user'
     entity ConsumptionTechnical as projection on db.ConsumptionRequests;
+
     type RisRow {
         CaseId          : String;
         SourceRecordId  : String;
@@ -60,6 +63,7 @@ extend service MaterialConsumptionService {
         CorrelationId   : String;
         Batch           : String;
     }
+
     type RowResult {
         ID                      : UUID;
         CaseId                  : String;
@@ -69,6 +73,7 @@ extend service MaterialConsumptionService {
         SAPMaterialDocumentYear : String;
         SAPMaterialDocumentItem : String;
     }
+
     type CaseImportResult {
         ID             : UUID;
         SessionNo      : String;
@@ -79,6 +84,7 @@ extend service MaterialConsumptionService {
         ReadyCount     : Integer;
         BlockedCount   : Integer;
     }
+
     action receiveFromRis(rows: many RisRow)                                      returns many RowResult;
     action importCaseConsumption(dateFrom: Date, dateTo: Date, rows: many RisRow) returns CaseImportResult;
     action calculateNuclear(ids: many UUID)                                       returns many RowResult;

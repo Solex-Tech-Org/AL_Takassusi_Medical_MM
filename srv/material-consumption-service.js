@@ -119,6 +119,7 @@ module.exports = class MaterialConsumptionService extends cds.ApplicationService
     this.on('receiveFromRis', req => cc.receiveFromRis(req.data.rows, req));
     this.on('calculateNuclear', req => cc.calculateRows(req.data.ids));
     this.on('postSelected', req => cc.postSelected(req.data.ids));
+    this.on('refreshSapDocumentItems', () => cc.refreshSapDocumentItems());
     this.on('reversePrimary', req => cc.reversePrimary(req.data, req.user.id));
     this.on('determineLiquidBatch', req => cc.determineLiquidBatch(req.data.serviceDate));
     this.on('determinePowderBatch', req => cc.determinePowderBatch(req.data));

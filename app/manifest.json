@@ -124,6 +124,10 @@
         "caseConsumption": {
           "viewName": "CaseConsumption",
           "viewId": "caseConsumption"
+        },
+        "sharedNursing": {
+          "viewName": "SharedNursing",
+          "viewId": "sharedNursing"
         }
       }
     }

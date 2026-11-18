@@ -228,12 +228,13 @@ sap.ui.define([
             vm.setProperty("/busy", true);
             try {
                 const xlsx = await this._loadXLSX();
+                await this.callAction("refreshSapDocumentItems", {});
                 const model = this.getODataModel();
                 const sessions = await this._readAll(model, "/CaseSessions",
                     "ID,SessionNo,DateFrom,DateTo,createdAt,TotalCases,PostedCases,RemainingCases,SessionStatus");
                 const cases = await this._readAll(model, "/ConsumptionTechnical",
-                    "CaseId,ProcedureCode,RISMaterialCode,ServiceDate,Hospital,Modality,Material,MaterialDescription,MaterialClass,Quantity,EntryUnit,ActualMci,PostingQuantity,PostingUnit,MaximumMciPerVial,CalculatedVials,Batch,BatchDetails,EstimatedWaste,Plant,StorageLocation,Status,ErrorMessage,SAPMaterialDocument,SAPMaterialDocumentYear,SAPMaterialDocumentItem",
-                    { $expand: "BatchAllocations($select=Sequence,SAPMaterialDocumentItem)" });
+                    "CaseId,ProcedureCode,RISMaterialCode,ServiceDate,Material,MaterialDescription,MaterialClass,Quantity,EntryUnit,ActualMci,PostingQuantity,PostingUnit,MaximumMciPerVial,CalculatedVials,Batch,BatchDetails,EstimatedWaste,Plant,StorageLocation,Status,ErrorMessage,SAPMaterialDocument,SAPMaterialDocumentYear,SAPMaterialDocumentItem",
+                    { $expand: "Hospital($select=Code),Modality($select=Code),BatchAllocations($select=Sequence,SAPMaterialDocumentItem)" });
                 if (!sessions.length && !cases.length) { return MessageToast.show(this.getText("exportNoData")); }
 
                 const sessionForDate = date => sessions.find(session => date >= session.DateFrom && date <= session.DateTo);
@@ -249,8 +250,8 @@ sap.ui.define([
                         "Transaction ID": session ? session.SessionNo : "",
                         "Case ID": row.CaseId,
                         "Service Date": row.ServiceDate,
-                        "Hospital": row.Hospital,
-                        "Modality": row.Modality,
+                        "Hospital": row.Hospital?.Code || row.Hospital_Code || "",
+                        "Modality": row.Modality?.Code || row.Modality_Code || "",
                         "Material": row.Material,
                         "RIS Material Code": row.RISMaterialCode,
                         "Procedure Code": row.ProcedureCode,
@@ -310,7 +311,9 @@ sap.ui.define([
                 .filter(Boolean);
             const detailItems = [...String(row.BatchDetails || "").matchAll(/\bSAP item\s+([^\s]+)/gi)]
                 .map(match => match[1]);
-            const items = [...new Set(allocationItems.length ? allocationItems : detailItems)]
+            const storedItem = String(row.SAPMaterialDocumentItem || "").trim();
+            const sourceItems = allocationItems.length ? allocationItems : detailItems.length ? detailItems : storedItem ? [storedItem] : [];
+            const items = [...new Set(sourceItems)]
                 .sort((left, right) => Number(left) - Number(right));
             return items.length ? items.join(", ") : row.SAPMaterialDocumentItem;
         },

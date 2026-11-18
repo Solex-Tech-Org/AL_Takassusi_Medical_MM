@@ -1,9 +1,5 @@
 'use strict';
-/**
- * Builds the business payload of FSD 6.3 (Z Material API).
- * !! Field names are the FSD "required API field" names - CONFIRM against the
- * !! Z API extension fields before configuration/testing (FSD note, 6.3).
- */
+/** Builds the canonical business payload from FSD 6.3 before the SAP adapter maps it. */
 const crypto = require('crypto');
 const idempotencyKey = parts => crypto.createHash('sha256').update(parts.join('|')).digest('hex').slice(0, 40);
 
@@ -28,8 +24,22 @@ function casePrimary(row, lines, mv) {
         Items: lines.map((l, i) => ({
             MaterialDocumentLine: i + 1, GoodsMovementType: mv.GoodsMovementType, Material: row.Material,
             Plant: row.Plant, StorageLocation: row.StorageLocation, Quantity: l.quantity, EntryUnit: l.unit, Batch: l.batch, BatchSource: l.batchSource,
-            CaseId: row.CaseId, Hospital: row.Hospital, Modality: row.Modality, CostCenter: l.costCenter || row.CostCenter
+            CaseId: row.CaseId, Hospital: row.Hospital, Modality: row.Modality
         }))
+    };
+}
+
+/** One primary consumption document containing every selected case line for a service day. */
+function dailyPrimary(serviceDate, items, key, scenario = 'NuclearConsumption') {
+    return {
+        ...baseHeader({
+            text: `${scenario === 'NuclearConsumption' ? 'AAML NM Consumption' : 'AAML Consumption'} ${serviceDate}`,
+            externalId: `AAML-CONSUMPTION-${serviceDate}`, key,
+            correlationId: serviceDate, scenario, category: scenario === 'NuclearConsumption' ? 'NMConsumption' : undefined,
+            postingDate: serviceDate, documentDate: serviceDate, serviceDate, goodsMovementCode: '03'
+        }),
+        DailyGroupKey: serviceDate,
+        Items: items.map((item, i) => ({ MaterialDocumentLine: (i + 1) * 10, ...item }))
     };
 }
 
@@ -56,11 +66,11 @@ function shared(h, items, mv, key) {
             text: `AAML Nursing ${h.Hospital}/${h.Modality}`, externalId: h.ExternalDocumentId, key, correlationId: h.CorrelationId,
             scenario: 'NursingShared', postingDate: h.PostingDate, documentDate: h.PostingDate, serviceDate: h.PostingDate, goodsMovementCode: mv.GoodsMovementCode
         }),
-        Hospital: h.Hospital, Modality: h.Modality, CostCenter: h.CostCenter,
+        Hospital: h.Hospital, Modality: h.Modality,
         Items: items.map((it, i) => ({
             MaterialDocumentLine: i + 1, GoodsMovementType: mv.GoodsMovementType, Material: it.Material,
             Plant: h.Plant, StorageLocation: h.StorageLocation, Quantity: it.Quantity, EntryUnit: it.BUOM
         }))
     };
 }
-module.exports = { idempotencyKey, casePrimary, wastePosting, shared };
+module.exports = { idempotencyKey, casePrimary, dailyPrimary, wastePosting, shared };

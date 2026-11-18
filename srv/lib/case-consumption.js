@@ -643,7 +643,8 @@ async function refreshSapDocumentItems() {
         const used = new Set();
         for (const row of rows) {
             const planned = row.allocations.length ? row.allocations.map(allocation => ({ allocation, batch: allocation.Batch,
-                quantity: allocation.Quantity ?? allocation.Vials })) : [{ allocation: null, batch: null, quantity: row.PostingQuantity ?? row.Quantity }];
+                quantity: allocation.Quantity ?? allocation.Vials })) : [{ allocation: null, batch: row.Batch || null,
+                quantity: row.PostingQuantity ?? row.Quantity }];
             const itemNumbers = [];
             for (const line of planned) {
                 const matches = item => String(item.Material || '') === String(row.Material || '')

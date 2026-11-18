@@ -1,3 +1,4 @@
+
 {
   "name": "AL_Takassusi_Medical_MM",
   "version": "1.0.0",
@@ -70,9 +71,6 @@
           "destination": "AAML_Public_Cloud",
           "path": "/"
         }
-      },
-      "[production]": {
-        "auth": "dummy"
       }
     },
     "aaml": {
@@ -109,7 +107,20 @@
         "goodsIssueCaseLookupField": "YY1_CaseID_MMI"
       }
     },
+    "[hybrid]": {
+      "aaml": {
+        "s4": {
+          "mode": "mock",
+          "readMode": "remote",
+          "postingMode": "mock",
+          "casePostingMode": "remote"
+        }
+      }
+    },
     "[production]": {
+      "requires": {
+        "auth": "dummy"
+      },
       "aaml": {
         "s4": {
           "mode": "mock",
